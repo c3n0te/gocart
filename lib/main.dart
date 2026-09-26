@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gocart/utils/theme_provider.dart';
+import 'package:gocart/utils/search_delegate.dart';
 import 'package:gocart/screens/home_screen.dart';
 import 'package:gocart/globals/logger.dart';
 
@@ -53,7 +54,19 @@ class _HomeLayoutState extends State<HomeLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Material 3 Navigation Bar'),
+        title: const Text('goCart'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              // Open the native search overlay
+              showSearch(
+                context: context,
+                delegate: GoCartSearchDelegate(),
+              );
+            },
+          ),
+        ],
       ),
       // 3. Render the selected screen in the body
       body: _screens[_currentScreenIndex],

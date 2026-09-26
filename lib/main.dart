@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'utils/theme_provider.dart';
-import 'screens/home_screen.dart';
-import 'utils/logger.dart';
+import 'package:gocart/utils/theme_provider.dart';
+import 'package:gocart/screens/home_screen.dart';
+import 'package:gocart/globals/logger.dart';
 
 void main() {
   logger.i('Starting the GoCart application...');
@@ -44,6 +44,7 @@ class _HomeLayoutState extends State<HomeLayout> {
   final List<Widget> _screens = const [
     Center(child: HomeScreen()),
     Center(child: Text('Map Screen Content', style: TextStyle(fontSize: 24))),
+    Center(child: Text('Shopping List Screen Content', style: TextStyle(fontSize: 24))),
     Center(child: Text('Shopping Cart Screen Content', style: TextStyle(fontSize: 24))),
     Center(child: Text('Account Screen Content', style: TextStyle(fontSize: 24))),
   ];
@@ -75,6 +76,11 @@ class _HomeLayoutState extends State<HomeLayout> {
             icon: Icon(Icons.map_outlined),
             selectedIcon: Icon(Icons.map),
             label: 'Map',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.list_alt_outlined),
+            selectedIcon: Icon(Icons.list_alt),
+            label: 'List',
           ),
           NavigationDestination(
             icon: Icon(Icons.shopping_cart_outlined),

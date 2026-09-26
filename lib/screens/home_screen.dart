@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
-import 'dart:io' show Platform;
-import '../utils/logger.dart';
-
-final pb = Platform.isAndroid ? PocketBase('http://10.0.2.2:8090') : PocketBase('http://127.0.0.1:8090');
+import 'package:gocart/globals/logger.dart';
+import 'package:gocart/globals/pocketbase.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -24,16 +22,18 @@ class HomeScreen extends StatelessWidget {
         
         if (snapshot.hasError) {
           logger.e('Error fetching items: ${snapshot.error}');
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(child: Text('Error loading items'));
         }
 
         final items = snapshot.data ?? [];
-        
         return ListView.builder(
           itemCount: items.length,
           itemBuilder: (context, index) {
+            final imageUrl = pb.files.getUrl(items[index], items[index].data['image'] ?? '', thumb: "100x100").toString();
             return ListTile(
-              title: Text(items[index].data['name'] ?? 'No Name'),
+              title: Text(items[index].data['name'] ?? "No Name"),
+              subtitle: Text('\$${items[index].data['price'] ?? "0.00"}'),
+              leading: Image.network(imageUrl),
             );
           },
         );

@@ -4,6 +4,7 @@ import 'package:gocart/utils/theme_provider.dart';
 import 'package:gocart/utils/search_delegate.dart';
 import 'package:gocart/screens/home_screen.dart';
 import 'package:gocart/screens/list_screen.dart';
+import 'package:gocart/screens/login_screen.dart';
 import 'package:gocart/globals/logger.dart';
 
 void main() {
@@ -48,7 +49,7 @@ class _HomeLayoutState extends State<HomeLayout> {
     Center(child: Text('Map Screen Content', style: TextStyle(fontSize: 24))),
     Center(child: ListScreen()),
     Center(child: Text('Shopping Cart Screen Content', style: TextStyle(fontSize: 24))),
-    Center(child: Text('Account Screen Content', style: TextStyle(fontSize: 24))),
+    Center(child: LoginScreen()),
   ];
 
   @override

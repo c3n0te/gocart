@@ -86,6 +86,16 @@ class _ListScreenState extends State<ListScreen> {
         return Scaffold(
           floatingActionButton: FloatingActionButton(
             onPressed: () {
+              if (pb.authStore.isValid) {
+                logger.i('User is logged in, showing add item dialog.');
+              } else {
+                logger.w('User is not logged in, cannot add item.');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('You must be logged in to add items.')),
+                );
+                return;
+              }
+
               showDialog(
                 context: context,
                 builder: (BuildContext context) {

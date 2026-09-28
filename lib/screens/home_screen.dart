@@ -7,8 +7,13 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   Future<List<RecordModel>> _fetchItems() async {
-    final items = await pb.collection('items').getFullList();
-    return items;
+    try {
+      final items = await pb.collection('items').getFullList();
+      return items;
+    } catch (e) {
+      logger.e('Error fetching items: $e');
+      return [];
+    }
   }
 
   @override

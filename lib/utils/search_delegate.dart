@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
 
 class GoCartSearchDelegate extends SearchDelegate<String> {
-  // Dummy data to search through
-  final List<String> searchTerms = [
-    'Apple',
-    'Banana',
-    'Cherry',
-    'Date',
-    'Elderberry',
-    'Fig',
-    'Grapes',
-  ];
+  final List<String> searchTerms = [];
 
   // 1. Clear text button appearing on the right side of the search bar
   @override
@@ -40,9 +31,9 @@ class GoCartSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildResults(BuildContext context) {
     List<String> matchQuery = [];
-    for (var fruit in searchTerms) {
-      if (fruit.toLowerCase().contains(query.toLowerCase())) {
-        matchQuery.add(fruit);
+    for (var item in searchTerms) {
+      if (item.toLowerCase().contains(query.toLowerCase())) {
+        matchQuery.add(item);
       }
     }
     return ListView.builder(
@@ -60,9 +51,9 @@ class GoCartSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) {
     List<String> matchQuery = [];
-    for (var fruit in searchTerms) {
-      if (fruit.toLowerCase().contains(query.toLowerCase())) {
-        matchQuery.add(fruit);
+    for (var item in searchTerms) {
+      if (item.toLowerCase().contains(query.toLowerCase())) {
+        matchQuery.add(item);
       }
     }
     return ListView.builder(

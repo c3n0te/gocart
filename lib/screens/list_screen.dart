@@ -16,9 +16,17 @@ class _ListScreenState extends State<ListScreen> {
   final TextEditingController _textFieldController = TextEditingController();
 
   Future<List<RecordModel>> _fetchItems() async {
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot retrieve user_id.');
+      return [];
+    }
+
     try {
-      final items = await pb.collection('list_items').getFullList();
-      return items;
+      final result = await pb.collection('list_items').getList(
+        filter: 'user_id="${pb.authStore.record?.id}"',
+      );
+
+      return result.items;
     } catch (e) {
       logger.e('Error fetching items: $e');
       return [];
@@ -31,10 +39,16 @@ class _ListScreenState extends State<ListScreen> {
       return;
     }
 
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot retrieve user_id.');
+      return;
+    }
+
     try {
       final newListItem = await pb.collection('list_items').create(
         body: {
           'name': itemName,
+          'user_id': pb.authStore.record?.id,
         },
       );
       
@@ -49,9 +63,11 @@ class _ListScreenState extends State<ListScreen> {
   Future<void> _removeItem(String itemId) async {
     try {
       await pb.collection('list_items').delete(itemId);
+      
       setState(() {
         _items.removeWhere((item) => item.id == itemId);
       });
+
     } catch (e) {
       logger.e('Error removing item: $e');
     }
@@ -133,18 +149,21 @@ class _ListScreenState extends State<ListScreen> {
           body: ListView.builder(
             itemCount: _items.length,
             itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(_items[index].data['name'] ?? 'No Name'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-                  onPressed: () { 
-                    // Handle remove item action
-                    _removeItem(_items[index].id);
-                  },
-                ),
-                onTap: () {
-                  // Handle item tap
+              return Dismissible(
+                key: Key(_items[index].id),
+                background: Container(color: Colors.red),
+                onDismissed: (direction) {
+                  _removeItem(_items[index].id);
                 },
+                child: ListTile(
+                  title: Text(
+                    _items[index].data['name'] ?? 'No Name',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  onTap: () {
+                  // Handle item tap
+                  },
+              ),
               );
             },
           ),

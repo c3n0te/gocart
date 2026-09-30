@@ -47,38 +47,85 @@ class SignupScreen extends StatefulWidget {
               children: [
                 TextFormField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(labelText: 'Username'),
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                    ),
+                  ),
                 ),
+                const SizedBox(height: 16),
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                  ),),
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                  ),
+                ),
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                  ),
+                ),
                 obscureText: true,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordConfirmController,
-                decoration: const InputDecoration(labelText: 'Confirm Password'),
+                decoration: const InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                  ),
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 20),
-              _isLoading ? const CircularProgressIndicator() : Row(
+              _isLoading ? const CircularProgressIndicator() : Column(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Navigate back to the previous screen
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),// Make button full width
+                      backgroundColor: Colors.black, // Change button color to black
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () async {
                       setState(() {
                         _isLoading = true;
                       });
+                      
                       await _signup();
+                      
+                      setState(() {
+                        _isLoading = false;
+                      });
+                      
                       if (!context.mounted) return; // Check if the widget is still mounted
+                      
                       if (pb.authStore.isValid) {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeLayout()));
                       } else {
@@ -87,13 +134,12 @@ class SignupScreen extends StatefulWidget {
                         );
                       }
                     },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50), // Make button full width
+                      backgroundColor: Colors.black, // Change button color to black
+                      foregroundColor: Colors.white, // Change text color to white
+                    ),
                     child: const Text('Sign Up'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Navigate back to the previous screen
-                    },
-                    child: const Text('Cancel'),
                   ),
                 ],
               ),

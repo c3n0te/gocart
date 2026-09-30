@@ -119,7 +119,12 @@ class _ListScreenState extends State<ListScreen> {
                     title: const Text('Add new list item'),
                     content: TextField(
                       controller: _textFieldController,
-                      decoration: InputDecoration(hintText: "Enter item name"),
+                      decoration: InputDecoration(
+                        hintText: "Enter item name",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                        ),
+                      ),
                     ),
                     actions: [
                       TextButton(
@@ -159,6 +164,10 @@ class _ListScreenState extends State<ListScreen> {
                   title: Text(
                     _items[index].data['name'] ?? 'No Name',
                     style: TextStyle(color: Colors.black),
+                  ),
+                  selectedTileColor: Colors.grey[300],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),  // Rounds the corners of the tile
                   ),
                   onTap: () {
                   // Handle item tap

@@ -37,14 +37,22 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('You are already logged in as ${pb.authStore.record?.id ?? 'Unknown User'}'),
-            ElevatedButton(
-              onPressed: () {
-                pb.authStore.clear();
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeLayout()));
-                logger.i('User logged out successfully.');
-                setState(() {}); // Refresh the UI after logout
-              },
-              child: const Text('Logout'),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  pb.authStore.clear();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeLayout()));
+                  logger.i('User logged out successfully.');
+                  setState(() {}); // Refresh the UI after logout
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50), // Full width button
+                  backgroundColor: Colors.black, // Change button color to black
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Logout'),
+              ),
             ),
           ],
         ),
@@ -58,15 +66,26 @@ class _LoginScreenState extends State<LoginScreen> {
             TextFormField(
               keyboardType: TextInputType.emailAddress,
               controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                ),
+              ),
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                ),
+              ),
               obscureText: true,
             ),
             const SizedBox(height: 20),
-            _isLoading ? const CircularProgressIndicator() : Row(
+            _isLoading ? const CircularProgressIndicator() : Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
@@ -74,8 +93,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     setState(() {
                       _isLoading = true;
                     });
+
                     await _login();
+
+                    setState(() {
+                      _isLoading = false;
+                    });
+
                     if (!context.mounted) return;
+                    
                     if (pb.authStore.isValid) {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeLayout()));
                     } else {
@@ -84,13 +110,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                     }
                   },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50), // Full width button
+                    backgroundColor: Colors.black, // Change button color to black
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Login'),
                 ),
+                const SizedBox(height: 16),
+                const Text("Don't have an account?", style: TextStyle(fontSize: 12)),
+                const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const SignupScreen()));
                   },
-                  child: const Text('Sign Up'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50), // Full width button
+                    backgroundColor: Colors.black, // Change button color to black
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Create an account'),
                 ),
               ],
             ),

@@ -3,8 +3,31 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:gocart/globals/logger.dart';
 import 'package:gocart/globals/pocketbase.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+  late Future<Map<String, List<RecordModel>>> _itemsFuture;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _itemsFuture = _fetchItems();
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _itemsFuture = _fetchItems(); // Wait for the future to complete before rebuilding
+    });
+    await _itemsFuture; // Wait for the future to complete before rebuilding
+  }
 
   Future<List<RecordModel>> _fetchListItems() async {
     if (pb.authStore.record == null) {
@@ -82,6 +105,7 @@ class HomeScreen extends StatelessWidget {
       }
 
       logger.i(itemsMap);
+
       return itemsMap;
     } catch (e) {
       logger.e('Error fetching items: $e');
@@ -91,8 +115,9 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // This is required for AutomaticKeepAliveClientMixin
     return FutureBuilder<Map<String, List<RecordModel>>>(
-      future: _fetchItems(),
+      future: _itemsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -104,12 +129,14 @@ class HomeScreen extends StatelessWidget {
         }
 
         final itemsMap = snapshot.data ?? {};
-        return ListView.builder(
-          scrollDirection: Axis.vertical,
-          itemCount: itemsMap.length,
-          itemBuilder: (context, mapIdx) {
-            final searchItemName = itemsMap.entries.elementAt(mapIdx).key;
-            final itemList = itemsMap.entries.elementAt(mapIdx).value;
+        return RefreshIndicator(
+          onRefresh: _handleRefresh,
+          child: ListView.builder(
+            scrollDirection: Axis.vertical,
+            itemCount: itemsMap.length,
+            itemBuilder: (context, mapIdx) {
+              final searchItemName = itemsMap.entries.elementAt(mapIdx).key;
+              final itemList = itemsMap.entries.elementAt(mapIdx).value;
             if (itemList.isEmpty) return const SizedBox();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +144,7 @@ class HomeScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    searchItemName,
+                    '"$searchItemName"',
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.left,
                   ),
@@ -129,9 +156,9 @@ class HomeScreen extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     itemCount: itemList.length,
                     itemBuilder: (context, listIdx) {
-                      final itemName = itemList[listIdx].data['name'] ?? "No Name";
-                      final itemPrice = itemList[listIdx].data['price'].toStringAsFixed(2) ?? "0.00";
-                      final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].data['image'] ?? '').toString();
+                      final itemName = itemList[listIdx].get<String>('name');
+                      final itemPrice = itemList[listIdx].get<double>('price').toStringAsFixed(2);
+                      final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].get<String>('image')).toString();
                       return SizedBox(
                         width: 250.0,
                         height: 250.0,
@@ -166,6 +193,7 @@ class HomeScreen extends StatelessWidget {
               ]
             );
           }
+          )
         );
       },
     );

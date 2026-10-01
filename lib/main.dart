@@ -46,7 +46,6 @@ class _HomeLayoutState extends State<HomeLayout> {
   // 2. Define the list of screens to toggle between
   final List<Widget> _screens = const [
     Center(child: HomeScreen()),
-    Center(child: Text('Map Screen Content', style: TextStyle(fontSize: 24))),
     Center(child: ListScreen()),
     Center(child: Text('Shopping Cart Screen Content', style: TextStyle(fontSize: 24))),
     Center(child: LoginScreen()),
@@ -71,7 +70,10 @@ class _HomeLayoutState extends State<HomeLayout> {
         ],
       ),
       // 3. Render the selected screen in the body
-      body: _screens[_currentScreenIndex],
+      body: IndexedStack(
+        index: _currentScreenIndex,
+        children: _screens,
+      ),
       
       // 4. Implement the NavigationBar widget
       bottomNavigationBar: NavigationBar(
@@ -86,11 +88,6 @@ class _HomeLayoutState extends State<HomeLayout> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
           ),
           NavigationDestination(
             icon: Icon(Icons.list_alt_outlined),

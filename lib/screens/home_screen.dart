@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
 
 
   Future<Map<String, List<RecordModel>>> _fetchItems() async {
-    final initItems = ["bananas", "milk", "peanut butter", "bread", "eggs", "steak", "chicken", "olive oil", "rice", "butter", "cheese"];
+    final initItems = ["bananas", "milk", "peanut butter", "bread", "eggs", "steak", "chicken", "olive oil", "rice", "cheese"];
 
     if (pb.authStore.record == null) {
       logger.w('User is not logged in, cannot retrieve user_id.');
@@ -100,7 +100,7 @@ class HomeScreen extends StatelessWidget {
         
         if (snapshot.hasError) {
           logger.e('Error fetching items: ${snapshot.error}');
-          return Center(child: Text('Error loading items'));
+          return const Center(child: Text('Error loading items'));
         }
 
         final itemsMap = snapshot.data ?? {};
@@ -108,20 +108,31 @@ class HomeScreen extends StatelessWidget {
           scrollDirection: Axis.vertical,
           itemCount: itemsMap.length,
           itemBuilder: (context, mapIdx) {
+            final searchItemName = itemsMap.entries.elementAt(mapIdx).key;
             final itemList = itemsMap.entries.elementAt(mapIdx).value;
-            if (itemList.isEmpty) return SizedBox();
-            return SizedBox(
-              height: 250.0,
-              width: 250.0,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: itemList.length,
-                itemBuilder: (context, listIdx) {
-                  final itemName = itemList[listIdx].data['name'] ?? "No Name";
-                  final itemPrice = itemList[listIdx].data['price'].toStringAsFixed(2) ?? "0.00";
-                  final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].data['image'] ?? '').toString();
-                  return UnconstrainedBox(
-                      child: SizedBox(
+            if (itemList.isEmpty) return const SizedBox();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    searchItemName,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.left,
+                  ),
+                ),
+                SizedBox(
+                  height: 250.0,
+                  width: double.infinity,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: itemList.length,
+                    itemBuilder: (context, listIdx) {
+                      final itemName = itemList[listIdx].data['name'] ?? "No Name";
+                      final itemPrice = itemList[listIdx].data['price'].toStringAsFixed(2) ?? "0.00";
+                      final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].data['image'] ?? '').toString();
+                      return SizedBox(
                         width: 250.0,
                         height: 250.0,
                         child: Card(
@@ -147,10 +158,12 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                         )
-                      )
-                  );
-                }
-              ),
+                      );
+                    }
+                  ),
+                ),
+                const SizedBox(height: 24.0),
+              ]
             );
           }
         );

@@ -6,19 +6,92 @@ import 'package:gocart/globals/pocketbase.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  Future<List<RecordModel>> _fetchItems() async {
+  Future<List<RecordModel>> _fetchListItems() async {
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot retrieve user_id.');
+      return [];
+    }
+
     try {
-      final items = await pb.collection('items').getFullList();
-      return items;
+      final result = await pb.collection('list_items').getList(
+        filter: 'user_id="${pb.authStore.record?.id}"',
+      );
+      return result.items;
+    } catch (e) {
+      logger.e('Error fetching list items: $e');
+      return [];
+    }
+  }
+
+
+  Future<Map<String, List<RecordModel>>> _fetchItems() async {
+    final initItems = ["bananas", "milk", "peanut butter", "bread", "eggs", "steak", "chicken", "olive oil", "rice", "butter", "cheese"];
+
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot retrieve user_id.');
+
+      try{
+        Map<String, List<RecordModel>> itemsMap = {};
+
+        for (var itemName in initItems) {
+          final result = await pb.collection('items').getList(
+            page: 1,
+            perPage: 20,
+            filter: 'name ~ "$itemName"',
+            sort: '+price'
+          );
+
+          itemsMap[itemName] = result.items;
+        }
+
+        logger.i(itemsMap);
+        return itemsMap;
+      } catch (e) {
+        logger.e("Failed to create map of all items");
+        return {};
+      } 
+    }
+
+    try {
+      final listItems = await _fetchListItems();
+      Map<String, List<RecordModel>> itemsMap = {};
+      if (listItems.isEmpty) {
+         for (var itemName in initItems) {
+          final result = await pb.collection('items').getList(
+            page: 1,
+            perPage: 20,
+            filter: 'name ~ "$itemName"',
+            sort: '+price'
+          );
+
+          itemsMap[itemName] = result.items;
+        }
+      } else {
+        for (var listItem in listItems) {
+          final listItemName = listItem.data['name'];
+          final result = await pb.collection('items').getList(
+            page: 1,
+            perPage: 20,
+            filter: 'name ~ "$listItemName"',
+            sort: '+price'
+          );
+
+          itemsMap[listItemName] = result.items;
+      
+        }
+      }
+
+      logger.i(itemsMap);
+      return itemsMap;
     } catch (e) {
       logger.e('Error fetching items: $e');
-      return [];
+      return {};
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<RecordModel>>(
+    return FutureBuilder<Map<String, List<RecordModel>>>(
       future: _fetchItems(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -30,37 +103,54 @@ class HomeScreen extends StatelessWidget {
           return Center(child: Text('Error loading items'));
         }
 
-        final items = snapshot.data ?? [];
-        return Container(
-          margin: const EdgeInsets.all(8.0),
-          child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final imageUrl = pb.files.getUrl(items[index], items[index].data['image'] ?? '', thumb: "200x200").toString();
-            return Card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Image.network(imageUrl, fit: BoxFit.cover),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(items[index].data['name'] ?? "No Name", style: const TextStyle(fontSize: 16)),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text('\$${items[index].data['price'] ?? "0.00"}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                  ),
-                ],
-              ),
-            );
-          },
-        )
+        final itemsMap = snapshot.data ?? {};
+        return Column(
+                  children: [
+                    for (var entry in itemsMap.entries) 
+                    entry.value.isEmpty ? SizedBox() :
+                    Expanded(
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: entry.value.length,
+                        itemBuilder: (context, index) {
+                          final itemName = entry.value[index].data['name'] ?? "No Name";
+                          final itemPrice = entry.value[index].data['price'].toStringAsFixed(2) ?? "0.00";
+                          final imageUrl = pb.files.getUrl(entry.value[index], entry.value[index].data['image'] ?? '').toString();
+                          return SingleChildScrollView(
+                            child: UnconstrainedBox(
+                              child: SizedBox(
+                                width: 250.0,
+                                height: 250.0,
+                                child: Card(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Image.network(
+                                          imageUrl,
+                                          width: double.infinity,
+                                          height: double.infinity, 
+                                          fit: BoxFit.cover
+                                        )
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(itemName, style: const TextStyle(fontSize: 16)),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                        child: Text('\$$itemPrice', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              )
+                            )
+                          );
+                        } 
+                      )
+                    ),
+                  ],
         );
       },
     );

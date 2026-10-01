@@ -118,18 +118,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text('Login'),
                 ),
                 const SizedBox(height: 16),
-                const Text("Don't have an account?", style: TextStyle(fontSize: 12)),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const SignupScreen()));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50), // Full width button
-                    backgroundColor: Colors.black, // Change button color to black
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Create an account'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                    const Text("Don't have an account? "),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(context,MaterialPageRoute(builder: (context) => const SignupScreen()),);
+                      },
+                      child: const Text(
+                        "Create one...",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline, // Gives it a hyperlink look
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

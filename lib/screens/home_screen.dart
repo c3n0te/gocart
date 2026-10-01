@@ -104,53 +104,55 @@ class HomeScreen extends StatelessWidget {
         }
 
         final itemsMap = snapshot.data ?? {};
-        return Column(
-                  children: [
-                    for (var entry in itemsMap.entries) 
-                    entry.value.isEmpty ? SizedBox() :
-                    Expanded(
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: entry.value.length,
-                        itemBuilder: (context, index) {
-                          final itemName = entry.value[index].data['name'] ?? "No Name";
-                          final itemPrice = entry.value[index].data['price'].toStringAsFixed(2) ?? "0.00";
-                          final imageUrl = pb.files.getUrl(entry.value[index], entry.value[index].data['image'] ?? '').toString();
-                          return SingleChildScrollView(
-                            child: UnconstrainedBox(
-                              child: SizedBox(
-                                width: 250.0,
-                                height: 250.0,
-                                child: Card(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Image.network(
-                                          imageUrl,
-                                          width: double.infinity,
-                                          height: double.infinity, 
-                                          fit: BoxFit.cover
-                                        )
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text(itemName, style: const TextStyle(fontSize: 16)),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                        child: Text('\$$itemPrice', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                                      ),
-                                    ],
-                                  ),
+        return ListView.builder(
+          scrollDirection: Axis.vertical,
+          itemCount: itemsMap.length,
+          itemBuilder: (context, mapIdx) {
+            final itemList = itemsMap.entries.elementAt(mapIdx).value;
+            if (itemList.isEmpty) return SizedBox();
+            return SizedBox(
+              height: 250.0,
+              width: 250.0,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: itemList.length,
+                itemBuilder: (context, listIdx) {
+                  final itemName = itemList[listIdx].data['name'] ?? "No Name";
+                  final itemPrice = itemList[listIdx].data['price'].toStringAsFixed(2) ?? "0.00";
+                  final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].data['image'] ?? '').toString();
+                  return UnconstrainedBox(
+                      child: SizedBox(
+                        width: 250.0,
+                        height: 250.0,
+                        child: Card(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Image.network(
+                                  imageUrl,
+                                  width: double.infinity,
+                                  height: double.infinity, 
+                                  fit: BoxFit.cover
                                 )
-                              )
-                            )
-                          );
-                        } 
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(itemName, style: const TextStyle(fontSize: 16)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Text('\$$itemPrice', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                              ),
+                            ],
+                          ),
+                        )
                       )
-                    ),
-                  ],
+                  );
+                }
+              ),
+            );
+          }
         );
       },
     );

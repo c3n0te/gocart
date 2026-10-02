@@ -49,13 +49,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
   Future<Map<String, List<RecordModel>>> _fetchItems() async {
     final initItems = ["bananas", "milk", "peanut butter", "bread", "eggs", "steak", "chicken", "olive oil", "rice", "cheese"];
+    Map<String, List<RecordModel>> itemsMap = {};
 
     if (pb.authStore.record == null) {
       logger.w('User is not logged in, cannot retrieve user_id.');
 
       try{
-        Map<String, List<RecordModel>> itemsMap = {};
-
         for (var itemName in initItems) {
           final result = await pb.collection('items').getList(
             page: 1,
@@ -77,7 +76,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
     try {
       final listItems = await _fetchListItems();
-      Map<String, List<RecordModel>> itemsMap = {};
       if (listItems.isEmpty) {
          for (var itemName in initItems) {
           final result = await pb.collection('items').getList(
@@ -105,7 +103,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       }
 
       logger.i(itemsMap);
-
       return itemsMap;
     } catch (e) {
       logger.e('Error fetching items: $e');
@@ -137,62 +134,62 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             itemBuilder: (context, mapIdx) {
               final searchItemName = itemsMap.entries.elementAt(mapIdx).key;
               final itemList = itemsMap.entries.elementAt(mapIdx).value;
-            if (itemList.isEmpty) return const SizedBox();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    '"$searchItemName"',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.left,
+              if (itemList.isEmpty) return const SizedBox();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      '"$searchItemName"',
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.left,
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: 250.0,
-                  width: double.infinity,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: itemList.length,
-                    itemBuilder: (context, listIdx) {
-                      final itemName = itemList[listIdx].get<String>('name');
-                      final itemPrice = itemList[listIdx].get<double>('price').toStringAsFixed(2);
-                      final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].get<String>('image')).toString();
-                      return SizedBox(
-                        width: 250.0,
-                        height: 250.0,
-                        child: Card(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Image.network(
-                                  imageUrl,
-                                  width: double.infinity,
-                                  height: double.infinity, 
-                                  fit: BoxFit.cover
-                                )
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(itemName, style: const TextStyle(fontSize: 16)),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text('\$$itemPrice', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                              ),
-                            ],
-                          ),
-                        )
-                      );
-                    }
+                  SizedBox(
+                    height: 250.0,
+                    width: double.infinity,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: itemList.length,
+                      itemBuilder: (context, listIdx) {
+                        final itemName = itemList[listIdx].get<String>('name');
+                        final itemPrice = itemList[listIdx].get<double>('price').toStringAsFixed(2);
+                        final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].get<String>('image')).toString();
+                        return SizedBox(
+                          width: 250.0,
+                          height: 250.0,
+                          child: Card(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Image.network(
+                                    imageUrl,
+                                    width: double.infinity,
+                                    height: double.infinity, 
+                                    fit: BoxFit.cover
+                                  )
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(itemName, style: const TextStyle(fontSize: 16)),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Text('\$$itemPrice', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                ),
+                              ],
+                            ),
+                          )
+                        );
+                      }
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24.0),
-              ]
-            );
-          }
+                  const SizedBox(height: 24.0),
+                ]
+              );
+            }
           )
         );
       },

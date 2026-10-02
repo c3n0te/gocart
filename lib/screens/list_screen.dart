@@ -14,6 +14,13 @@ class ListScreen extends StatefulWidget {
 class _ListScreenState extends State<ListScreen> {
   final List<RecordModel> _items = [];
   final TextEditingController _textFieldController = TextEditingController();
+  final Map<String, TextEditingController> _controllers = {};
+
+  TextEditingController _getControllerForItem(dynamic item) {
+    return _controllers.putIfAbsent(item.id, () {
+      return TextEditingController(text: item.get<String>('name'));
+    });
+  }
 
   Future<List<RecordModel>> _fetchItems() async {
     if (pb.authStore.record == null) {
@@ -70,6 +77,22 @@ class _ListScreenState extends State<ListScreen> {
 
     } catch (e) {
       logger.e('Error removing item: $e');
+    }
+  }
+
+  Future<void> _updateItem(String itemId, String newName) async {
+    try {
+      await pb.collection('list_items').update(itemId, body: {'name': newName});
+      
+      setState(() {
+        final index = _items.indexWhere((item) => item.id == itemId);
+        if (index != -1 && index < _items.length) {
+          _items[index].set('name', newName);
+        }
+      });
+
+    } catch (e) {
+      logger.e('Error updating item: $e');
     }
   }
 
@@ -161,18 +184,26 @@ class _ListScreenState extends State<ListScreen> {
                   _removeItem(_items[index].id);
                 },
                 child: ListTile(
-                  title: Text(
-                    _items[index].data['name'] ?? 'No Name',
+                  leading: const Icon(Icons.fiber_manual_record, color: Colors.black),
+                  title: TextField(
+                    controller: _getControllerForItem(_items[index]),
                     style: TextStyle(color: Colors.black),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
+                    ),
+                    onChanged: (value) {
+                      _items[index].set('name', value); // Update the state when the text changes
+                    }, 
+                    onSubmitted: (value) {
+                       _updateItem(_items[index].id, value);
+                    },
                   ),
                   selectedTileColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),  // Rounds the corners of the tile
                   ),
-                  onTap: () {
-                  // Handle item tap
-                  },
-              ),
+                ),
               );
             },
           ),

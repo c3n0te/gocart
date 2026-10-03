@@ -3,6 +3,7 @@ import 'package:gocart/globals/pocketbase.dart';
 import 'package:gocart/globals/logger.dart';
 import 'package:gocart/main.dart';
 import 'package:gocart/screens/signup_screen.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,7 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       // Handle successful login, e.g., navigate to another screen
     } catch (e) {
-      // Handle login error, e.g., show a snackbar or dialog
+      logger.e('Login failed: $e'); // Handle login error, e.g., show a snackbar or dialog
+      return;
     }
   }
 
@@ -85,7 +87,11 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
             ),
             const SizedBox(height: 20),
-            _isLoading ? const CircularProgressIndicator() : Column(
+            _isLoading ? const SpinKitWave(
+              color: Colors.black,
+              size: 30.0,
+              type: SpinKitWaveType.center, // Options: .start, .end, .center
+            ) : Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
@@ -124,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text("Don't have an account? "),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(context,MaterialPageRoute(builder: (context) => const SignupScreen()),);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const SignupScreen()));
                       },
                       child: const Text(
                         "Create one...",

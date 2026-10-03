@@ -37,6 +37,7 @@ dependencies:
   provider: ^6.1.5+1
   pocketbase: ^0.25.1
   logger: ^2.8.0
+  flutter_spinkit: ^5.2.2
 
 dev_dependencies:
   flutter_test:

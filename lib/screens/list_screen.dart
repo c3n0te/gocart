@@ -13,7 +13,7 @@ class ListScreen extends StatefulWidget {
 
 class _ListScreenState extends State<ListScreen> {
   final List<RecordModel> _items = [];
-  final TextEditingController _textFieldController = TextEditingController();
+  final TextEditingController _newListItemController = TextEditingController();
   final Map<String, TextEditingController> _controllers = {};
 
   TextEditingController _getControllerForItem(dynamic item) {
@@ -22,7 +22,7 @@ class _ListScreenState extends State<ListScreen> {
     });
   }
 
-  Future<List<RecordModel>> _fetchItems() async {
+  Future<List<RecordModel>> _fetchListItems() async {
     if (pb.authStore.record == null) {
       logger.w('User is not logged in, cannot retrieve user_id.');
       return [];
@@ -64,6 +64,7 @@ class _ListScreenState extends State<ListScreen> {
       });      
     } catch (e) {
         logger.e('Error adding item: $e');
+        return;
     }
   }
 
@@ -77,6 +78,7 @@ class _ListScreenState extends State<ListScreen> {
 
     } catch (e) {
       logger.e('Error removing item: $e');
+      return;
     }
   }
 
@@ -93,28 +95,29 @@ class _ListScreenState extends State<ListScreen> {
 
     } catch (e) {
       logger.e('Error updating item: $e');
+      return;
     }
   }
 
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed
-    _textFieldController.dispose();
+    _newListItemController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: _fetchItems(),
+      future: _fetchListItems(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          logger.i('Syncing list items...');
         }
 
         if (snapshot.hasError) {
-          logger.e('Error fetching items: ${snapshot.error}');
-          return Center(child: Text('Error loading items'));
+          logger.e('Error syncing list items: ${snapshot.error}');
+          return Center(child: Text('Error loading list items'));
         }
         
         if (snapshot.hasData) {
@@ -141,7 +144,7 @@ class _ListScreenState extends State<ListScreen> {
                   return AlertDialog(
                     title: const Text('Add new list item'),
                     content: TextField(
-                      controller: _textFieldController,
+                      controller: _newListItemController,
                       decoration: InputDecoration(
                         hintText: "Enter item name",
                         border: OutlineInputBorder(
@@ -153,15 +156,15 @@ class _ListScreenState extends State<ListScreen> {
                       TextButton(
                         child: const Text('Cancel'),
                         onPressed: () {
-                          _textFieldController.clear(); // Clear the text field
+                          _newListItemController.clear(); // Clear the text field
                           Navigator.of(context).pop(); // Closes the popup
                         },
                       ),
                       TextButton(
                         child: const Text('Ok'),
                         onPressed: () {
-                          _addItem(_textFieldController.text); // adds item to list
-                          _textFieldController.clear(); // Clear the text field
+                          _addItem(_newListItemController.text); // adds item to list
+                          _newListItemController.clear(); // Clear the text field
                           Navigator.of(context).pop(); // Closes the popup
                         },
                       )
@@ -175,6 +178,7 @@ class _ListScreenState extends State<ListScreen> {
             child: const Icon(Icons.add),
           ),
           body: ListView.builder(
+            scrollDirection: Axis.vertical,
             itemCount: _items.length,
             itemBuilder: (context, index) {
               return Dismissible(
@@ -186,6 +190,7 @@ class _ListScreenState extends State<ListScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.fiber_manual_record, color: Colors.black),
                   title: TextField(
+                    maxLines: null, // Allows the text field to expand vertically
                     controller: _getControllerForItem(_items[index]),
                     style: TextStyle(color: Colors.black),
                     decoration: InputDecoration(
@@ -196,7 +201,11 @@ class _ListScreenState extends State<ListScreen> {
                       _items[index].set('name', value); // Update the state when the text changes
                     }, 
                     onSubmitted: (value) {
-                       _updateItem(_items[index].id, value);
+                      _updateItem(_items[index].id, value);
+                    },
+                    onTapOutside: (event) {
+                      _updateItem(_items[index].id, _getControllerForItem(_items[index]).text);
+                      FocusScope.of(context).unfocus(); // Dismiss the keyboard when tapping outside
                     },
                   ),
                   selectedTileColor: Colors.grey[300],

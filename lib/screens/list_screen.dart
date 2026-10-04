@@ -201,9 +201,18 @@ class _ListScreenState extends State<ListScreen> {
                       _items[index].set('name', value); // Update the state when the text changes
                     }, 
                     onSubmitted: (value) {
+                      if (_getControllerForItem(_items[index]).text.isEmpty) {
+                        _removeItem(_items[index].id);
+                        return;
+                      }
                       _updateItem(_items[index].id, value);
                     },
                     onTapOutside: (event) {
+                      if (_getControllerForItem(_items[index]).text.isEmpty) {
+                        _removeItem(_items[index].id);
+                        FocusScope.of(context).unfocus(); // Dismiss the keyboard when tapping outside
+                        return;
+                      }
                       _updateItem(_items[index].id, _getControllerForItem(_items[index]).text);
                       FocusScope.of(context).unfocus(); // Dismiss the keyboard when tapping outside
                     },

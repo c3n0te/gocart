@@ -98,8 +98,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             sort: '+price'
           );
 
-          itemsMap[listItemName] = result.items;
-      
+          itemsMap[listItemName] = result.items;   
         }
       }
 
@@ -108,6 +107,26 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     } catch (e) {
       logger.e('Error fetching items: $e');
       return {};
+    }
+  }
+
+  Future<void> _addToCart(RecordModel item, int quantity) async {
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot add item to cart.');
+      return;
+    }
+
+    try {
+      await pb.collection('cart_items').create(
+        body: {
+          'quantity': quantity,
+          'item': item.id,
+          'user': pb.authStore.record?.id,
+        },
+      );
+      logger.i('Item ${item.get<String>("name")} added to cart successfully.');
+    } catch (e) {
+      logger.e('Error adding item to cart: $e');
     }
   }
 
@@ -185,17 +204,26 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                      child: Text('\$$itemPrice', style: const TextStyle(fontSize: 16, color: Colors.black)),
-                                    ),
-                                    Badge(
-                                      backgroundColor: Colors.lightGreen.withValues(
-                                        red: 0.0,
-                                        green: 0.8,
-                                        blue: 0.0,
-                                        alpha: 0.3,
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 105.0, minWidth: 0.0), 
+                                        child: Text('\$$itemPrice', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       ),
+                                    ),
+                                    Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                      label: Text(itemStore, style: const TextStyle(fontSize: 16, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 105.0, minWidth: 0.0), // Set a fixed width for the badge
+                                        child: Badge(
+                                          backgroundColor: Colors.lightGreen.withValues(
+                                            red: 0.0,
+                                            green: 0.8,
+                                            blue: 0.0,
+                                            alpha: 0.3,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                          label: Text(itemStore, style: const TextStyle(fontSize: 16, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                        ),
+                                      ),
                                     ),     
                                   ],
                                 ),
@@ -207,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                     minimumSize: const Size(double.infinity, 35), // Make the button take the full width of the card
                                   ),
                                   onPressed: () {
-                                    // Handle "Add to Cart" button press
+                                    _addToCart(itemList[listIdx], 1); // Add the item to the cart with a quantity of 1
                                   },
                                   label: const Text('Add to cart', style: TextStyle(color: Colors.white)),
                                 ),

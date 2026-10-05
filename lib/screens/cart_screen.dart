@@ -94,7 +94,9 @@ class _CartScreenState extends State<CartScreen> {
                 return ExpansionTile(
                   initiallyExpanded: true,
                   shape: Border(),
-                  title: Text(store, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  title: Text('$store ', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: cartItemsList.length == 1 ? Text('(1 item)', style: const TextStyle(fontSize: 14, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis) : 
+                    Text('(${cartItemsList.length} items)', style: const TextStyle(fontSize: 14, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis),
                   children: [
                     ListView.builder(
                       scrollDirection: Axis.vertical,

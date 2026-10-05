@@ -127,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       logger.i('Item ${item.get<String>("name")} added to cart successfully.');
     } catch (e) {
       logger.e('Error adding item to cart: $e');
+      return;
     }
   }
 

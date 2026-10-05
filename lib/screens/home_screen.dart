@@ -13,6 +13,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   late Future<Map<String, List<RecordModel>>> _itemsFuture;
+  late Future<Map<String, int>> _cartItemsFuture;
+  Map<String, int> _cartItems = {}; // Map to hold item IDs and their quantities
 
   @override
   bool get wantKeepAlive => true;
@@ -21,13 +23,21 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   void initState() {
     super.initState();
     _itemsFuture = _fetchItems();
+    _cartItemsFuture = _getCartItems();
+    return;
+  }
+
+  int _getQuantity(String itemId) {
+    return _cartItems[itemId] ?? 0;
   }
 
   Future<void> _handleRefresh() async {
     setState(() {
-      _itemsFuture = _fetchItems(); // Wait for the future to complete before rebuilding
+      _itemsFuture = _fetchItems();
+      _cartItemsFuture = _getCartItems(); 
     });
     await _itemsFuture; // Wait for the future to complete before rebuilding
+    await _cartItemsFuture;
   }
 
   Future<List<RecordModel>> _fetchListItems() async {
@@ -110,24 +120,98 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     }
   }
 
+  Future<void> _removeFromCart(RecordModel item) async {
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot remove item to cart.');
+      return;
+    }
+
+    setState(() {
+      _cartItems[item.id] = 0;
+    });
+
+    try {
+      final cartItem = await pb.collection('cart_items').getFirstListItem(
+        'item = "${item.id}"',
+        expand: 'item'
+      );
+
+      await pb.collection('cart_items').delete(cartItem.id);
+      logger.i('removing item: ${cartItem.id} from cart_items');
+    } catch (e) {
+      logger.e("Failed to remove cart item with item id: ${item.id} from cart: $e");
+      return;
+    }
+
+  }
+
   Future<void> _addToCart(RecordModel item, int quantity) async {
     if (pb.authStore.record == null) {
       logger.w('User is not logged in, cannot add item to cart.');
       return;
     }
 
+    setState(() {
+      _cartItems[item.id] = quantity;
+    });
+
     try {
-      await pb.collection('cart_items').create(
-        body: {
-          'quantity': quantity,
-          'item': item.id,
-          'user': pb.authStore.record?.id,
-        },
+      // if the item is already in the cart, update the quantity instead of creating a new record
+      final existingCartItems = await pb.collection('cart_items').getList(
+        filter: 'user="${pb.authStore.record?.id}" && item="${item.id}"',
       );
-      logger.i('Item ${item.get<String>("name")} added to cart successfully.');
+
+      if (existingCartItems.items.isNotEmpty) {
+        final existingCartItem = existingCartItems.items.first;
+        await pb.collection('cart_items').update(
+          existingCartItem.id,
+          body: {
+            'quantity': quantity,
+          },
+        );
+        logger.i('Updating cart item ($existingCartItem) quantity to $quantity');
+      } else {
+        await pb.collection('cart_items').create(
+          body: {
+            'quantity': quantity,
+            'item': item.id,
+            'user': pb.authStore.record?.id,
+          },
+        );
+        logger.i('creating cart item');
+      }
     } catch (e) {
       logger.e('Error adding item to cart: $e');
       return;
+    }
+  }
+
+  Future<Map<String, int>> _getCartItems() async {
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot retrieve cart items.');
+      return {};
+    }
+
+    Map<String, int> cartItemsMap = {};
+    try {
+      final cartItems = await pb.collection('cart_items').getList(
+        filter: 'user="${pb.authStore.record?.id}"',
+      );
+
+      for (var cartItem in cartItems.items) {
+        final itemId = cartItem.get<String>('item');
+        final quantity = cartItem.get<int>('quantity');
+        cartItemsMap[itemId] = quantity;
+      }
+
+      setState(() {
+        _cartItems = cartItemsMap;
+      });
+      
+      return cartItemsMap;
+    } catch (e) {
+      logger.e('Error fetching cart items: $e');
+      return {};
     }
   }
 
@@ -175,10 +259,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                       scrollDirection: Axis.horizontal,
                       itemCount: itemList.length,
                       itemBuilder: (context, listIdx) {
-                        final itemName = itemList[listIdx].get<String>('name');
-                        final itemPrice = itemList[listIdx].get<double>('price').toStringAsFixed(2);
-                        final itemStore = itemList[listIdx].get<String>('store');
-                        final imageUrl = pb.files.getUrl(itemList[listIdx], itemList[listIdx].get<String>('image')).toString();
+                        final item = itemList[listIdx];
+                        final itemName =  item.get<String>('name');
+                        final itemPrice = item.get<double>('price').toStringAsFixed(2);
+                        final itemStore = item.get<String>('store');
+                        final imageUrl = pb.files.getUrl(item, item.get<String>('image')).toString();
                         return SizedBox(
                           width: 250.0,
                           height: 300.0,
@@ -229,14 +314,45 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                   ],
                                 ),
                                 const SizedBox(height: 8.0),
-                                ElevatedButton.icon(
+                                _getQuantity(item.id) > 0 ?  Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove, color: Colors.black),
+                                      onPressed: () {
+                                        if (_getQuantity(item.id) > 1) {
+                                          _addToCart(item, _getQuantity(item.id) - 1);
+                                        } else {
+                                          _removeFromCart(item);
+                                        }
+                                      },
+                                    ),
+                                    Text('${_getQuantity(item.id)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    IconButton(
+                                      icon: const Icon(Icons.add, color: Colors.black),
+                                      onPressed: () {
+                                        _addToCart(item, _getQuantity(item.id) + 1);
+                                      },
+                                    ),
+                                  ],
+                                ) : ElevatedButton.icon(
                                   icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.black,
                                     minimumSize: const Size(double.infinity, 35), // Make the button take the full width of the card
                                   ),
                                   onPressed: () {
-                                    _addToCart(itemList[listIdx], 1); // Add the item to the cart with a quantity of 1
+                                    if (pb.authStore.record == null) {
+                                      logger.w('User is not logged in, cannot add item to cart.');
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Please log in to add items to your cart.'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    _addToCart(item, 1); // Add the item to the cart with a quantity of 1
                                   },
                                   label: const Text('Add to cart', style: TextStyle(color: Colors.white)),
                                 ),

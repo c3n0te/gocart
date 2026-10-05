@@ -20,21 +20,21 @@ class _CartScreenState extends State<CartScreen> {
     
     Map<String, List<RecordModel>> storeItemsMap = {};
     try {
-      final cartItems = await pb.collection('cart_items').getFullList(
+      final cartItems = await pb.collection('cart_items').getList(
+        filter: 'user="${pb.authStore.record?.id}"',
         expand: 'item',
       );
 
-      for (var cartItem in cartItems) {
+      for (var cartItem in cartItems.items) {
         final expand = cartItem.get<List<RecordModel>>('expand');
         for (var expandedItem in expand) {
           final item = expandedItem.get<RecordModel>('item');
-          final store = item.get<String>('store'); // Assuming 'item' is the store name for simplicity
+          final store = item.get<String>('store');
           storeItemsMap.putIfAbsent(store, () => []);
           storeItemsMap[store]!.add(cartItem);
         }
       }
 
-      logger.i('Fetched cart items: $storeItemsMap');
       return storeItemsMap;
     } catch (e) {
       logger.e('Error fetching cart items: $e');
@@ -106,10 +106,11 @@ class _CartScreenState extends State<CartScreen> {
                       itemBuilder: (context, listIndex) {
                         final cartItem = cartItemsList[listIndex];
                         final item = cartItem.get<RecordModel>('expand').get<RecordModel>('item');
-                        final imageUrl =  pb.files.getUrl(item, item.get<String>('image')).toString();
+                        final imageUrl = pb.files.getUrl(item, item.get<String>('image')).toString();
                         final itemName = item.get<String>('name');
                         final itemPrice = item.get<double>('price').toStringAsFixed(2);
                         final itemQuantity = cartItem.get<int>('quantity');
+                        if (itemQuantity == 0) return ListTile();
                         return ListTile(
                           leading: Container(
                             decoration: BoxDecoration(

@@ -327,7 +327,17 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                         }
                                       },
                                     ),
-                                    Text('${_getQuantity(item.id)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    SizedBox(
+                                      height: 16,
+                                      width: 125,
+                                      child: Center(
+                                        child: Text('${_getQuantity(item.id)}', 
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 
+                                          maxLines: 1, 
+                                          overflow: TextOverflow.ellipsis
+                                        )
+                                      )
+                                    ),
                                     IconButton(
                                       icon: const Icon(Icons.add, color: Colors.black),
                                       onPressed: () {

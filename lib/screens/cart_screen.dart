@@ -241,20 +241,23 @@ class _CartScreenState extends State<CartScreen> {
                             Text('Price: \$$itemPrice', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
                             SizedBox(
                               height: 35,
-                              width: 200,
                               child: ElevatedButton(
                                 onPressed: () {},
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.black,
                                   foregroundColor: Colors.white,
+                                  padding: EdgeInsets.zero,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30), // Rounded corners
                                   ),
                                 ),                             
                                 child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     IconButton(
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
                                       icon: const Icon(Icons.remove, color: Colors.white),
                                       onPressed: () async {
                                         if (_getQuantity(item.id) > 1) {
@@ -264,11 +267,11 @@ class _CartScreenState extends State<CartScreen> {
                                         }
                                       },
                                     ),
-                                    SizedBox(
-                                      height: 35,
-                                      width: 155,
-                                      child: Center(
-                                        child: Text('${_getQuantity(item.id)}', 
+                                    Flexible(
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 12),
+                                        child: Text(
+                                          '${_getQuantity(item.id)}', 
                                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 
                                           maxLines: 1, 
                                           overflow: TextOverflow.ellipsis
@@ -276,6 +279,8 @@ class _CartScreenState extends State<CartScreen> {
                                       )
                                     ),
                                     IconButton(
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
                                       icon: const Icon(Icons.add, color: Colors.white),
                                       onPressed: () async {
                                         await _addToCart(item, _getQuantity(item.id) + 1);

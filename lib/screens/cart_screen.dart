@@ -37,7 +37,7 @@ class _CartScreenState extends State<CartScreen> {
     }
 
     try{
-      // Subscribe to the specific user's cart or a global cart collection
+      // Subscribe to the specific user's cart collection
       await pb.collection('cart_items').subscribe('*', (ev) {
         // e.action can be 'create', 'update', or 'delete'
         // Feed the updated model event into our stream controller
@@ -83,6 +83,22 @@ class _CartScreenState extends State<CartScreen> {
       logger.e('Error fetching cart items: $e');
       return {};
     }
+  }
+
+   Future<void> _removeFromCart(RecordModel cartItem) async {
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot remove item to cart.');
+      return;
+    }
+
+    try {
+      await pb.collection('cart_items').delete(cartItem.id);
+      logger.i('removing item: ${cartItem.id} from cart_items');
+    } catch (e) {
+      logger.e("Failed to remove cart item: $cartItem from cart: $e");
+      return;
+    }
+
   }
 
   @override 
@@ -158,7 +174,24 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ),
                         title: Text(itemName, style: const TextStyle(fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text('Quantity: $itemQuantity\nPrice: \$$itemPrice', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),                  
+                        isThreeLine: true,
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start, // Aligns subtitles to the left
+                          children: [
+                            Text('Quantity: $itemQuantity', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
+                             Text('Price: \$$itemPrice', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),                  
+                        trailing: IconButton(
+                          onPressed: () {
+                            _removeFromCart(cartItem);
+                            setState(() {
+                              // trigger widget rebuild  
+                            });
+                          },
+                          icon: const Icon(Icons.delete), 
+                          color: Colors.black
+                        ),
                       );
                     },
                   ),

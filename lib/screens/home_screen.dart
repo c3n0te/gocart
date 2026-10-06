@@ -142,7 +142,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       logger.e("Failed to remove cart item with item id: ${item.id} from cart: $e");
       return;
     }
-
   }
 
   Future<void> _addToCart(RecordModel item, int quantity) async {
@@ -328,8 +327,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                       },
                                     ),
                                     SizedBox(
-                                      height: 16,
-                                      width: 125,
+                                      height: 35,
+                                      width: 75,
                                       child: Center(
                                         child: Text('${_getQuantity(item.id)}', 
                                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 

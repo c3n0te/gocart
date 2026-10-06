@@ -15,6 +15,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   late Future<Map<String, List<RecordModel>>> _itemsFuture;
   late Future<Map<String, int>> _cartItemsFuture;
   Map<String, int> _cartItems = {}; // Map to hold item IDs and their quantities
+  Future<void>? _pendingCartOp;
 
   @override
   bool get wantKeepAlive => true;
@@ -130,6 +131,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       _cartItems[item.id] = 0;
     });
 
+    // Wait for the creation network request to finish completely first
+    if (_pendingCartOp != null) {
+      await _pendingCartOp;
+    }
+
     try {
       final cartItem = await pb.collection('cart_items').getFirstListItem(
         'item = "${item.id}"',
@@ -154,35 +160,44 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       _cartItems[item.id] = quantity;
     });
 
-    try {
-      // if the item is already in the cart, update the quantity instead of creating a new record
-      final existingCartItems = await pb.collection('cart_items').getList(
-        filter: 'user="${pb.authStore.record?.id}" && item="${item.id}"',
-      );
+    Future<void> currentOp() async {
+      try { 
+        // if the item is already in the cart, update the quantity instead of creating a new record
+        final existingCartItems = await pb.collection('cart_items').getList(
+          filter: 'user="${pb.authStore.record?.id}" && item="${item.id}"',
+        );
 
-      if (existingCartItems.items.isNotEmpty) {
-        final existingCartItem = existingCartItems.items.first;
-        await pb.collection('cart_items').update(
-          existingCartItem.id,
-          body: {
-            'quantity': quantity,
-          },
-        );
-        logger.i('Updating cart item ($existingCartItem) quantity to $quantity');
-      } else {
-        await pb.collection('cart_items').create(
-          body: {
-            'quantity': quantity,
-            'item': item.id,
-            'user': pb.authStore.record?.id,
-          },
-        );
-        logger.i('creating cart item');
+        if (existingCartItems.items.isNotEmpty) {
+          final existingCartItem = existingCartItems.items.first;
+          await pb.collection('cart_items').update(
+            existingCartItem.id,
+            body: {
+              'quantity': quantity,
+            },
+          );
+          logger.i('Updating cart item ($existingCartItem) quantity to $quantity');
+        } else {
+          await pb.collection('cart_items').create(
+            body: {
+              'quantity': quantity,
+              'item': item.id,
+              'user': pb.authStore.record?.id,
+            },
+          );
+          logger.i('creating cart item');
+        }
+      } catch (e) {
+        logger.e('Error adding item to cart: $e');
+        return;
       }
-    } catch (e) {
-      logger.e('Error adding item to cart: $e');
-      return;
     }
+
+    // Wait for any previous click to finish, then execute this one
+    if (_pendingCartOp != null) {
+      await _pendingCartOp;
+    }
+    _pendingCartOp = currentOp();
+    await _pendingCartOp;
   }
 
   Future<Map<String, int>> _getCartItems() async {
@@ -318,11 +333,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                   children: [
                                     IconButton(
                                       icon: const Icon(Icons.remove, color: Colors.black),
-                                      onPressed: () {
+                                      onPressed: () async {
                                         if (_getQuantity(item.id) > 1) {
-                                          _addToCart(item, _getQuantity(item.id) - 1);
+                                          await _addToCart(item, _getQuantity(item.id) - 1);
                                         } else {
-                                          _removeFromCart(item);
+                                          await _removeFromCart(item);
                                         }
                                       },
                                     ),
@@ -339,8 +354,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.add, color: Colors.black),
-                                      onPressed: () {
-                                        _addToCart(item, _getQuantity(item.id) + 1);
+                                      onPressed: () async {
+                                        await _addToCart(item, _getQuantity(item.id) + 1);
                                       },
                                     ),
                                   ],
@@ -350,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                     backgroundColor: Colors.black,
                                     minimumSize: const Size(double.infinity, 35), // Make the button take the full width of the card
                                   ),
-                                  onPressed: () {
+                                  onPressed: () async {
                                     if (pb.authStore.record == null) {
                                       logger.w('User is not logged in, cannot add item to cart.');
                                       ScaffoldMessenger.of(context).showSnackBar(
@@ -361,7 +376,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                       );
                                       return;
                                     }
-                                    _addToCart(item, 1); // Add the item to the cart with a quantity of 1
+
+                                    await _addToCart(item, 1); // Add the item to the cart with a quantity of 1
                                   },
                                   label: const Text('Add to cart', style: TextStyle(color: Colors.white)),
                                 ),

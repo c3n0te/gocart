@@ -178,8 +178,8 @@ class _CartScreenState extends State<CartScreen> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start, // Aligns subtitles to the left
                           children: [
+                            Text('Price: \$$itemPrice', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
                             Text('Quantity: $itemQuantity', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
-                             Text('Price: \$$itemPrice', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
                           ],
                         ),                  
                         trailing: IconButton(

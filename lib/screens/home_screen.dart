@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   void initState() {
     super.initState();
     _itemsFuture = _fetchItems();
-    _cartItemsFuture = _getCartItems();
+    _cartItemsFuture = _fetchCartItems();
     return;
   }
 
@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   Future<void> _handleRefresh() async {
     setState(() {
       _itemsFuture = _fetchItems();
-      _cartItemsFuture = _getCartItems(); 
+      _cartItemsFuture = _fetchCartItems(); 
     });
     await _itemsFuture; // Wait for the future to complete before rebuilding
     await _cartItemsFuture;
@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     await _pendingCartOp;
   }
 
-  Future<Map<String, int>> _getCartItems() async {
+  Future<Map<String, int>> _fetchCartItems() async {
     if (pb.authStore.record == null) {
       logger.w('User is not logged in, cannot retrieve cart items.');
       return {};

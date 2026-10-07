@@ -46,7 +46,7 @@ class _CartScreenState extends State<CartScreen> {
       await pb.collection('cart_items').subscribe('*', (ev) {
         // e.action can be 'create', 'update', or 'delete'
         // Feed the updated model event into our stream controller
-        logger.i('real time event: $ev');
+        logger.i('CartScreen real time event: $ev');
         _cartStreamController.add(ev.record);
         setState(() {}); // trigger widget rebuild
       },
@@ -239,6 +239,7 @@ class _CartScreenState extends State<CartScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start, // Aligns subtitles to the left
                           children: [
                             Text('Price: \$$itemPrice', style: const TextStyle(fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 12),
                             SizedBox(
                               height: 35,
                               child: ElevatedButton(

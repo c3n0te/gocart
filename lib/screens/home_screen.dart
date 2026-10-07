@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:gocart/globals/logger.dart';
@@ -12,6 +13,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+  final StreamController<RecordModel?> _cartStreamController = StreamController<RecordModel?>.broadcast();
   late Future<Map<String, List<RecordModel>>> _itemsFuture;
   late Future<Map<String, int>> _cartItemsFuture;
   Map<String, int> _cartItems = {}; // Map to hold item IDs and their quantities
@@ -23,13 +25,53 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
+    _subscribeToCart();
     _itemsFuture = _fetchItems();
     _cartItemsFuture = _fetchCartItems();
     return;
   }
 
+  @override
+  void dispose() {
+    // Unsubscribe from PocketBase to prevent memory leaks or duplicate connections
+    pb.collection('cart_items').unsubscribe('*');
+    _cartStreamController.close();
+    super.dispose();
+  }
+
   int _getQuantity(String itemId) {
     return _cartItems[itemId] ?? 0;
+  }
+
+  Future<void> _subscribeToCart() async {
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot retrieve user_id.');
+      return;
+    }
+
+    try{
+      // Subscribe to the specific user's cart collection
+      await pb.collection('cart_items').subscribe('*', (ev) {
+        // e.action can be 'create', 'update', or 'delete'
+        // Feed the updated model event into our stream controller
+        logger.i('HomeScreen real time event: $ev');
+        _cartStreamController.add(ev.record);
+        final itemId = ev.record?.get<String>('item');
+        final quantity = ev.record?.get<int>('quantity');
+        if (itemId != null && quantity != null) {
+            _cartItems[itemId] = quantity;
+        }
+
+        setState(() {}); // trigger widget rebuild
+      },
+        filter: 'user = "${pb.authStore.record?.id}"',
+      );
+
+      logger.i('Subscribed to cart item table events');
+    } catch (e) {
+      logger.e('Failed to subscribe to cart items table events: $e');
+      return;
+    }
   }
 
   Future<void> _handleRefresh() async {

@@ -16,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   final StreamController<RecordModel?> _cartStreamController = StreamController<RecordModel?>.broadcast();
   late Future<Map<String, List<RecordModel>>> _itemsFuture;
   late Future<Map<String, int>> _cartItemsFuture;
+  final Map<String, Future<void>> _cartWriteQueue = {};
   Map<String, int> _cartItems = {}; // Map to hold item IDs and their quantities
   Future<void>? _pendingCartOp;
 
@@ -59,10 +60,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         final itemId = ev.record?.get<String>('item');
         final quantity = ev.record?.get<int>('quantity');
         if (itemId != null && quantity != null) {
-            _cartItems[itemId] = quantity;
+          if (!_cartWriteQueue.containsKey(itemId)) {
+            setState(() {
+              _cartItems[itemId] = quantity;
+            });
+          }
         }
-
-        setState(() {}); // trigger widget rebuild
       },
         filter: 'user = "${pb.authStore.record?.id}"',
       );
@@ -169,10 +172,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       return;
     }
 
+    /*
     setState(() {
       _cartItems[item.id] = 0;
     });
-
+    */
+    
     // Wait for the creation network request to finish completely first
     if (_pendingCartOp != null) {
       await _pendingCartOp;
@@ -198,9 +203,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       return;
     }
 
+    /*
     setState(() {
       _cartItems[item.id] = quantity;
     });
+    */
 
     Future<void> currentOp() async {
       try { 
@@ -376,11 +383,26 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                     IconButton(
                                       icon: const Icon(Icons.remove, color: Colors.black),
                                       onPressed: () async {
-                                        if (_getQuantity(item.id) > 1) {
-                                          await _addToCart(item, _getQuantity(item.id) - 1);
-                                        } else {
-                                          await _removeFromCart(item);
-                                        }
+                                        setState(() {
+                                          _cartItems[item.id] = _getQuantity(item.id) - 1;
+                                        });
+                                        final previousOperation = _cartWriteQueue[item.id] ?? Future.value();
+                                        _cartWriteQueue[item.id] = previousOperation.then((_) async {
+                                          if (_getQuantity(item.id) > 1) {
+                                            await _addToCart(item, _getQuantity(item.id) - 1);
+                                          } else {
+                                            await _removeFromCart(item);
+                                          }
+                                        }).catchError((e) {
+                                          logger.e('Network sync failed: $e');
+                                        }).whenComplete(() {
+                                          // Only clean up the queue key if no new taps have appended to it
+                                          if (_cartWriteQueue[item.id] != null) {
+                                            _cartWriteQueue.remove(item.id);
+                                            // Safety refresh to catch up to final DB state
+                                            if (mounted) setState(() {}); 
+                                          }
+                                        });
                                       },
                                     ),
                                     SizedBox(
@@ -397,7 +419,23 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                     IconButton(
                                       icon: const Icon(Icons.add, color: Colors.black),
                                       onPressed: () async {
-                                        await _addToCart(item, _getQuantity(item.id) + 1);
+                                        setState(() {
+                                          _cartItems[item.id] = _getQuantity(item.id) + 1;
+                                        });
+
+                                        final previousOperation = _cartWriteQueue[item.id] ?? Future.value();
+                                        _cartWriteQueue[item.id] = previousOperation.then((_) async {
+                                          await _addToCart(item, _getQuantity(item.id) + 1);
+                                        }).catchError((e) {
+                                          logger.e('Network sync failed: $e');
+                                        }).whenComplete(() {
+                                          // Only clean up the queue key if no new taps have appended to it
+                                          if (_cartWriteQueue[item.id] != null) {
+                                            _cartWriteQueue.remove(item.id);
+                                            // Safety refresh to catch up to final DB state
+                                            if (mounted) setState(() {}); 
+                                          }
+                                        });
                                       },
                                     ),
                                   ],
@@ -419,7 +457,14 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                       return;
                                     }
 
-                                    await _addToCart(item, 1); // Add the item to the cart with a quantity of 1
+                                    _cartWriteQueue[item.id] = _addToCart(item, 1).catchError((e) {
+                                      logger.e('Network sync failed: $e');
+                                    }).whenComplete(() {
+                                      if (_cartWriteQueue[item.id] != null) {
+                                        _cartWriteQueue.remove(item.id);
+                                        if (mounted) setState(() {});
+                                      }
+                                    });
                                   },
                                   label: const Text('Add to cart', style: TextStyle(color: Colors.white)),
                                 ),

@@ -64,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             setState(() {
               _cartItems[itemId] = quantity;
             });
-          }
+          } 
 
           // on delete the old item quantity persists, it must be manually overwritten 
           if (ev.action == "delete") {
@@ -240,6 +240,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     if (_pendingCartOp != null) {
       await _pendingCartOp;
     }
+    
     _pendingCartOp = currentOp();
     await _pendingCartOp;
   }
@@ -372,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                   ],
                                 ),
                                 const SizedBox(height: 8.0),
-                                _getQuantity(item.id) > 0 ?  Row(
+                                _getQuantity(item.id) > 0 ? Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [
                                     IconButton(
@@ -462,8 +463,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                     }); 
                                      
                                     _cartDebounceTimers[item.id]?.cancel();
-
-                                    // 3. Schedule network request
                                     _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
                                       try {
                                         await _addToCart(item, 1);
@@ -473,7 +472,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                                         _cartDebounceTimers.remove(item.id);
                                       }
                                     });
-
                                   },
                                   label: const Text('Add to cart', style: TextStyle(color: Colors.white)),
                                 ),

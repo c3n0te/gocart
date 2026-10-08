@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:gocart/screens/account_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gocart/utils/theme_provider.dart';
-import 'package:gocart/utils/search_delegate.dart';
 import 'package:gocart/screens/home_screen.dart';
 import 'package:gocart/screens/list_screen.dart';
-import 'package:gocart/screens/login_screen.dart';
+import 'package:gocart/screens/account_screen.dart';
 import 'package:gocart/screens/cart_screen.dart';
 import 'package:gocart/globals/logger.dart';
 
@@ -22,7 +22,7 @@ class GoCart extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          title: 'Flutter Demo',
+          title: 'goCart Grocery Price Comparison App',
           theme: ThemeProvider.lightTheme,
           darkTheme: ThemeProvider.darkTheme,
           themeMode: themeProvider.themeMode,
@@ -49,7 +49,7 @@ class _HomeLayoutState extends State<HomeLayout> {
     Center(child: HomeScreen()),
     Center(child: ListScreen()),
     Center(child: CartScreen()),
-    Center(child: LoginScreen()),
+    Center(child: AccountScreen()),
   ];
 
   @override
@@ -57,18 +57,6 @@ class _HomeLayoutState extends State<HomeLayout> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('goCart'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // Open the native search overlay
-              showSearch(
-                context: context,
-                delegate: GoCartSearchDelegate(),
-              );
-            },
-          ),
-        ],
       ),
       // 3. Render the selected screen in the body
       body: IndexedStack(

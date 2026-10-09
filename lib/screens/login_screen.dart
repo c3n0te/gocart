@@ -8,14 +8,7 @@ import 'package:gocart/screens/settings_screen.dart';
 import 'package:gocart/screens/signup_screen.dart';
 import 'package:gocart/screens/forgot_password_screen.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-
-class RegExPatterns {
-  static final RegExp email = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-  static final RegExp hasUppercase = RegExp(r'[A-Z]');
-  static final RegExp hasLowercase = RegExp(r'[a-z]');
-  static final RegExp hasDigits = RegExp(r'[0-9]');
-  static final RegExp hasSpecialChar = RegExp(r'[!@#$%^&*(),.?":{}|<>]');
-}
+import 'package:gocart/globals/regex.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -40,7 +33,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
+          autovalidateMode: AutovalidateMode.onUserInteractionIfError,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

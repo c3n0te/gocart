@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gocart/globals/auth_notifier.dart';
 import 'package:gocart/globals/pocketbase.dart';
 import 'package:gocart/globals/logger.dart';
 import 'package:gocart/main.dart';
-import 'package:gocart/screens/account_screen.dart';
+import 'package:gocart/screens/settings_screen.dart';
 import 'package:gocart/screens/signup_screen.dart';
 import 'package:gocart/screens/forgot_password_screen.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -15,37 +17,24 @@ class RegExPatterns {
   static final RegExp hasSpecialChar = RegExp(r'[!@#$%^&*(),.?":{}|<>]');
 }
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false; // Track loading state
   bool _isPasswordVisible = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  Future<void> _login() async {
-    try {
-      await pb.collection('users').authWithPassword(
-        _emailController.text,
-        _passwordController.text,
-      );
-      // Handle successful login, e.g., navigate to another screen
-    } catch (e) {
-      logger.e('Login failed: $e'); // Handle login error, e.g., show a snackbar or dialog
-      return;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return pb.authStore.isValid ? 
-    AccountScreen() :
+    SettingsScreen() :
     Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -53,8 +42,8 @@ class _LoginScreenState extends State<LoginScreen> {
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 45),
               Text('Welcome', style: TextStyle(fontSize: 24)),
               Text('Sign in to continue'),
               const SizedBox(height: 45),
@@ -135,7 +124,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         _isLoading = true;
                       });
 
-                      await _login();
+                      await ref.read(authProvider.notifier).login(
+                        _emailController.text.trim(),
+                        _passwordController.text.trim()
+                      );
 
                       setState(() {
                         _isLoading = false;
@@ -144,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (!context.mounted) return;
                       
                       if (pb.authStore.isValid) {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const HomeLayout()));
+                        setState(() {});
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Login failed. Please check your credentials.')),

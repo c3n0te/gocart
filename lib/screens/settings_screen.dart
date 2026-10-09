@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gocart/globals/auth_notifier.dart';
 import 'package:settings_ui/settings_ui.dart';
-import 'package:gocart/main.dart';
-import 'package:gocart/globals/pocketbase.dart';
 import 'package:gocart/globals/logger.dart';
 
-class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
 
   @override
-  State<AccountScreen> createState() => _AccountScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _AccountScreenState extends State<AccountScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _notifications = true; // load from and save to your store
-
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +50,8 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
               SettingsTile(
                 title: const Text('Sign out', style: TextStyle(color: Colors.red),),
-                onPressed: (context) { 
-                  pb.authStore.clear();
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => HomeLayout()));
+                onPressed: (_) { 
+                  ref.read(authProvider.notifier).logout();
                 },
               ),
             ],

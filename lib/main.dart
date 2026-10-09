@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:gocart/globals/auth_notifier.dart';
 import 'package:gocart/screens/login_screen.dart';
+import 'package:gocart/screens/settings_screen.dart';
 import 'package:gocart/utils/theme_provider.dart';
 import 'package:gocart/screens/home_screen.dart';
 import 'package:gocart/screens/list_screen.dart';
@@ -8,7 +12,7 @@ import 'package:gocart/globals/logger.dart';
 
 void main() {
   logger.i('Starting the GoCart application...');
-  runApp(const GoCart());
+  runApp(const ProviderScope(child: GoCart()));
 }
 
 class GoCart extends StatelessWidget {
@@ -26,67 +30,77 @@ class GoCart extends StatelessWidget {
   }
 }
 
-class HomeLayout extends StatefulWidget {
+class HomeLayout extends ConsumerStatefulWidget {
   const HomeLayout({super.key});
 
 @override
-  State<HomeLayout> createState() => _HomeLayoutState();
+  ConsumerState<HomeLayout> createState() => _HomeLayoutState();
 }
 
-class _HomeLayoutState extends State<HomeLayout> {
+class _HomeLayoutState extends ConsumerState<HomeLayout> {
   // 1. Track the current active index
-  int _currentScreenIndex = 3;
+  int _currentScreenIndex = 0;
 
   // 2. Define the list of screens to toggle between
   final List<Widget> _screens = const [
     Center(child: HomeScreen()),
     Center(child: ListScreen()),
     Center(child: CartScreen()),
-    Center(child: LoginScreen()),
+    Center(child: SettingsScreen()),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('goCart'),
-      ),
-      // 3. Render the selected screen in the body
-      body: IndexedStack(
-        index: _currentScreenIndex,
-        children: _screens,
-      ),
-      
-      // 4. Implement the NavigationBar widget
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentScreenIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _currentScreenIndex = index;
-          });
-        },
-        destinations: const <Widget>[
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.list_alt_outlined),
-            selectedIcon: Icon(Icons.list_alt),
-            label: 'List',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            selectedIcon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+    final authState = ref.watch(authProvider);
+
+    return authState.when(
+      data: (isLoggedIn) {
+        return isLoggedIn ? Scaffold(
+        appBar: AppBar(
+          title: const Text('goCart'),
+        ),
+        // 3. Render the selected screen in the body
+        body: IndexedStack(
+          index: _currentScreenIndex,
+          children: _screens,
+        ),
+        
+        // 4. Implement the NavigationBar widget
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _currentScreenIndex,
+          onDestinationSelected: (int index) {
+            setState(() {
+              _currentScreenIndex = index;
+            });
+          },
+          destinations: const <Widget>[
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.list_alt_outlined),
+              selectedIcon: Icon(Icons.list_alt),
+              label: 'List',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.shopping_cart_outlined),
+              selectedIcon: Icon(Icons.shopping_cart),
+              label: 'Cart',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
+      ) : LoginScreen();
+      },
+      loading: () => const Scaffold(body: SpinKitWave(color: Colors.black, size: 30.0)),
+      error: (error, _) => Scaffold(
+        body: Center(child: Text('Authentication Error: $error')),
       ),
     );
   }

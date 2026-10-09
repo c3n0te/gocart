@@ -327,6 +327,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                           width: 250.0,
                           height: 300.0,
                           child: Card(
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(
+                                color: Colors.black, // Border color
+                                width: 1.0,          // Border thickness
+                              ),
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

@@ -22,6 +22,52 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final TextEditingController _passwordConfirmController =
       TextEditingController();
 
+  String? _validateName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter your name';
+    }
+    return null;
+  }
+
+  String? _validateUsername(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter your username';
+    }
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter your email';
+    }
+    if (!RegExPatterns.email.hasMatch(value)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your password';
+    }
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters long';
+    }
+    if (!RegExPatterns.hasUppercase.hasMatch(value)) {
+      return 'Must contain at least one uppercase letter';
+    }
+    if (!RegExPatterns.hasLowercase.hasMatch(value)) {
+      return 'Must contain at least one lowercase letter';
+    }
+    if (!RegExPatterns.hasDigits.hasMatch(value)) {
+      return 'Must contain at least one number';
+    }
+    if (!RegExPatterns.hasSpecialChar.hasMatch(value)) {
+      return 'Must contain at least one special character';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,12 +88,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(10.0)),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your username';
-                    }
-                    return null;
-                  },
+                  validator: _validateUsername,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -59,15 +100,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(10.0)),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExPatterns.email.hasMatch(value)) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
+                  validator: _validateEmail,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -78,12 +111,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       borderRadius: BorderRadius.all(Radius.circular(10.0)),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your name';
-                    }
-                    return null;
-                  },
+                  validator: _validateName,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -95,27 +123,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
                   obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < 8) {
-                      return 'Password must be at least 8 characters long';
-                    }
-                    if (!RegExPatterns.hasUppercase.hasMatch(value)) {
-                      return 'Must contain at least one uppercase letter';
-                    }
-                    if (!RegExPatterns.hasLowercase.hasMatch(value)) {
-                      return 'Must contain at least one lowercase letter';
-                    }
-                    if (!RegExPatterns.hasDigits.hasMatch(value)) {
-                      return 'Must contain at least one number';
-                    }
-                    if (!RegExPatterns.hasSpecialChar.hasMatch(value)) {
-                      return 'Must contain at least one special character';
-                    }
-                    return null;
-                  },
+                  validator: _validatePassword,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -127,27 +135,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
                   obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < 8) {
-                      return 'Password must be at least 8 characters long';
-                    }
-                    if (!RegExPatterns.hasUppercase.hasMatch(value)) {
-                      return 'Must contain at least one uppercase letter';
-                    }
-                    if (!RegExPatterns.hasLowercase.hasMatch(value)) {
-                      return 'Must contain at least one lowercase letter';
-                    }
-                    if (!RegExPatterns.hasDigits.hasMatch(value)) {
-                      return 'Must contain at least one number';
-                    }
-                    if (!RegExPatterns.hasSpecialChar.hasMatch(value)) {
-                      return 'Must contain at least one special character';
-                    }
-                    return null;
-                  },
+                  validator: _validatePassword,
                 ),
                 const SizedBox(height: 20),
                 _isLoading
@@ -193,8 +181,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 _isLoading = false;
                               });
 
-                              if (!context.mounted)
+                              if (!context.mounted) {
                                 return; // Check if the widget is still mounted
+                              }
 
                               if (pb.authStore.isValid) {
                                 Navigator.pop(context);

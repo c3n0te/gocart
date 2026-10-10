@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gocart/globals/auth_notifier.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:gocart/globals/logger.dart';
+import 'package:gocart/screens/update_password_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -45,8 +46,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Account', style: TextStyle(color: Colors.black),),
             tiles: [
               SettingsTile(
+                leading: const Icon(Icons.password),
                 title: const Text('Password'), 
                 description: const Text('Update your credentials'),
+                onPressed: (context) {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const UpdatePasswordScreen()));
+                },
               ),
               SettingsTile(
                 title: const Text('Sign out', style: TextStyle(color: Colors.red),),

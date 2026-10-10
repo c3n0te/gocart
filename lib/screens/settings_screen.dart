@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gocart/globals/auth_notifier.dart';
 import 'package:settings_ui/settings_ui.dart';
-import 'package:gocart/globals/logger.dart';
 import 'package:gocart/screens/update_password_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -31,7 +30,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 leading: const Icon(Icons.language),
                 title: const Text('Language'),
                 value: const Text('English'),
-                onPressed: (context) {/* open a language picker */},
+                onPressed: (context) {
+                  /* open a language picker */
+                },
               ),
               SettingsTile.switchTile(
                 leading: const Icon(Icons.notifications),
@@ -43,19 +44,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
           SettingsSection(
-            title: const Text('Account', style: TextStyle(color: Colors.black),),
+            title: const Text('Account', style: TextStyle(color: Colors.black)),
             tiles: [
               SettingsTile(
                 leading: const Icon(Icons.password),
-                title: const Text('Password'), 
+                title: const Text('Password'),
                 description: const Text('Update your credentials'),
                 onPressed: (context) {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const UpdatePasswordScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UpdatePasswordScreen(),
+                    ),
+                  );
                 },
               ),
               SettingsTile(
-                title: const Text('Sign out', style: TextStyle(color: Colors.red),),
-                onPressed: (_) { 
+                title: const Text(
+                  'Sign out',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onPressed: (_) {
                   ref.read(authProvider.notifier).logout();
                 },
               ),

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gocart/globals/pocketbase.dart';
-import 'package:gocart/globals/logger.dart';
 
 class AuthNotifier extends AsyncNotifier<bool> {
   @override
@@ -14,7 +13,7 @@ class AuthNotifier extends AsyncNotifier<bool> {
     try {
       // Perform the PocketBase login
       await pb.collection('users').authWithPassword(email, password);
-      
+
       // Update the state. Because pb.authStore.isValid is now true,
       // any widget listening to this provider will rebuild.
       state = AsyncValue.data(pb.authStore.isValid);
@@ -23,18 +22,63 @@ class AuthNotifier extends AsyncNotifier<bool> {
     }
   }
 
-  Future<void> signup(String username, String email, String name, String password, String passwordConfirm) async {
+  Future<void> updatePassword(
+    String currentPassword,
+    String newPassword,
+    String newPasswordConfirm,
+  ) async {
+    state = const AsyncValue.loading();
+    final userId = pb.authStore.record?.id;
+    final email = pb.authStore.record?.data['email'];
+    if (userId == null || email == null || email.isEmpty) {
+      state = AsyncValue.data(pb.authStore.isValid);
+      return;
+    }
+
+    try {
+      // Perform the PocketBase login
+      await pb
+          .collection('users')
+          .update(
+            userId,
+            body: {
+              'oldPassword': currentPassword,
+              'password': newPassword,
+              'passwordConfirm': newPasswordConfirm,
+            },
+          );
+
+      pb.authStore.clear();
+      await pb.collection('users').authWithPassword(email, newPassword);
+
+      // Update the state. Because pb.authStore.isValid is now true,
+      // any widget listening to this provider will rebuild.
+      state = AsyncValue.data(pb.authStore.isValid);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> signup(
+    String username,
+    String email,
+    String name,
+    String password,
+    String passwordConfirm,
+  ) async {
     state = AsyncValue.loading();
     try {
-      await pb.collection('users').create(
-        body: {
-          'username': username,
-          'email': email,
-          'name': name, 
-          'password': password,
-          'passwordConfirm': passwordConfirm,
-        },
-      );
+      await pb
+          .collection('users')
+          .create(
+            body: {
+              'username': username,
+              'email': email,
+              'name': name,
+              'password': password,
+              'passwordConfirm': passwordConfirm,
+            },
+          );
 
       await pb.collection('users').authWithPassword(email, password);
       state = AsyncValue.data(pb.authStore.isValid);

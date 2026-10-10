@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gocart/globals/auth_notifier.dart';
 import 'package:gocart/globals/pocketbase.dart';
-import 'package:gocart/globals/logger.dart';
-import 'package:gocart/main.dart';
 import 'package:gocart/screens/settings_screen.dart';
 import 'package:gocart/screens/signup_screen.dart';
 import 'package:gocart/screens/forgot_password_screen.dart';
@@ -26,163 +24,192 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return pb.authStore.isValid ? 
-    SettingsScreen() :
-    Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteractionIfError,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Welcome', style: TextStyle(fontSize: 24)),
-              Text('Sign in to continue'),
-              const SizedBox(height: 45),
-              TextFormField(
-                keyboardType: TextInputType.emailAddress,
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExPatterns.email.hasMatch(value)) {
-                    return 'Please enter a valid email address';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordVisible
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: !_isPasswordVisible,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (value.length < 8) {
-                    return 'Password must be at least 8 characters long';
-                  }
-                  if (!RegExPatterns.hasUppercase.hasMatch(value)) {
-                    return 'Must contain at least one uppercase letter';
-                  }
-                  if (!RegExPatterns.hasLowercase.hasMatch(value)) {
-                    return 'Must contain at least one lowercase letter';
-                  }
-                  if (!RegExPatterns.hasDigits.hasMatch(value)) {
-                    return 'Must contain at least one number';
-                  }
-                  if (!RegExPatterns.hasSpecialChar.hasMatch(value)) {
-                    return 'Must contain at least one special character';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              _isLoading ? const SpinKitWave(
-                color: Colors.black,
-                size: 30.0,
-                type: SpinKitWaveType.center, // Options: .start, .end, .center
-              ) : Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-
-                      await ref.read(authProvider.notifier).login(
-                        _emailController.text.trim(),
-                        _passwordController.text.trim()
-                      );
-
-                      setState(() {
-                        _isLoading = false;
-                      });
-
-                      if (!context.mounted) return;
-                      
-                      if (pb.authStore.isValid) {
-                        setState(() {});
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Login failed. Please check your credentials.')),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50), // Full width button
-                      backgroundColor: Colors.black, // Change button color to black
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Sign in', style: TextStyle(fontSize: 18),),
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()));
-                    },
-                    child: const Text(
-                      "Forgot Password?",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline, // Gives it a hyperlink look
-                      ),
-                    ),
-                  ),   
-                  const SizedBox(height: 16),                             
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                      const Text("Don't have an account? "),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => const SignupScreen()));
-                        },
-                        child: const Text(
-                          "Sign up.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.blue,
-                            decoration: TextDecoration.underline, // Gives it a hyperlink look
-                          ),
+    return pb.authStore.isValid
+        ? SettingsScreen()
+        : Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteractionIfError,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Welcome', style: TextStyle(fontSize: 24)),
+                    Text('Sign in to continue'),
+                    const SizedBox(height: 45),
+                    TextFormField(
+                      keyboardType: TextInputType.emailAddress,
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10.0)),
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!RegExPatterns.email.hasMatch(value)) {
+                          return 'Please enter a valid email address';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPasswordVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                      obscureText: !_isPasswordVisible,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        if (value.length < 8) {
+                          return 'Password must be at least 8 characters long';
+                        }
+                        if (!RegExPatterns.hasUppercase.hasMatch(value)) {
+                          return 'Must contain at least one uppercase letter';
+                        }
+                        if (!RegExPatterns.hasLowercase.hasMatch(value)) {
+                          return 'Must contain at least one lowercase letter';
+                        }
+                        if (!RegExPatterns.hasDigits.hasMatch(value)) {
+                          return 'Must contain at least one number';
+                        }
+                        if (!RegExPatterns.hasSpecialChar.hasMatch(value)) {
+                          return 'Must contain at least one special character';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _isLoading
+                        ? const SpinKitWave(
+                            color: Colors.black,
+                            size: 30.0,
+                            type: SpinKitWaveType
+                                .center, // Options: .start, .end, .center
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () async {
+                                  setState(() {
+                                    _isLoading = true;
+                                  });
+
+                                  await ref
+                                      .read(authProvider.notifier)
+                                      .login(
+                                        _emailController.text.trim(),
+                                        _passwordController.text.trim(),
+                                      );
+
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+
+                                  if (!context.mounted) return;
+
+                                  if (pb.authStore.isValid) {
+                                    setState(() {});
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Login failed. Please check your credentials.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size(
+                                    double.infinity,
+                                    50,
+                                  ), // Full width button
+                                  backgroundColor: Colors
+                                      .black, // Change button color to black
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text(
+                                  'Sign in',
+                                  style: TextStyle(fontSize: 18),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  "Forgot Password?",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    decoration: TextDecoration
+                                        .underline, // Gives it a hyperlink look
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text("Don't have an account? "),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SignupScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Sign up.",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        decoration: TextDecoration.underline, // Gives it a hyperlink look
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+          );
   }
 }

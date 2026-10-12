@@ -23,7 +23,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty) {
       return 'Please enter your email';
     }
     if (!RegExPatterns.email.hasMatch(value)) {
@@ -125,8 +125,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   await ref
                                       .read(authProvider.notifier)
                                       .login(
-                                        _emailController.text.trim(),
-                                        _passwordController.text.trim(),
+                                        _emailController.text,
+                                        _passwordController.text,
                                       );
 
                                   setState(() {

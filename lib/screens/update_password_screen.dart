@@ -109,9 +109,9 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen> {
                               await ref
                                   .read(authProvider.notifier)
                                   .updatePassword(
-                                    _currentPasswordController.text.trim(),
-                                    _newPasswordController.text.trim(),
-                                    _newPasswordConfirmController.text.trim(),
+                                    _currentPasswordController.text,
+                                    _newPasswordController.text,
+                                    _newPasswordConfirmController.text,
                                   );
 
                               setState(() {

@@ -23,21 +23,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       TextEditingController();
 
   String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty || value.trim().isEmpty) {
       return 'Please enter your name';
     }
     return null;
   }
 
   String? _validateUsername(String? value) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty || value.trim().isEmpty) {
       return 'Please enter your username';
     }
     return null;
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty) {
       return 'Please enter your email';
     }
     if (!RegExPatterns.email.hasMatch(value)) {
@@ -170,11 +170,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               await ref
                                   .read(authProvider.notifier)
                                   .signup(
-                                    _usernameController.text.trim(),
-                                    _emailController.text.trim(),
-                                    _nameController.text.trim(),
-                                    _passwordController.text.trim(),
-                                    _passwordConfirmController.text.trim(),
+                                    _usernameController.text,
+                                    _emailController.text,
+                                    _nameController.text,
+                                    _passwordController.text,
+                                    _passwordConfirmController.text,
                                   );
 
                               setState(() {

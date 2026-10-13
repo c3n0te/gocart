@@ -1,178 +1,41 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:gocart/globals/pocketbase.dart';
 import 'package:gocart/globals/logger.dart';
+import 'package:gocart/globals/cart_notifier.dart';
+import 'package:gocart/models/cart_item.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  State<CartScreen> createState() => _CartScreenState();
+  ConsumerState<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> {
-  final StreamController<RecordModel?> _cartStreamController = StreamController<RecordModel?>.broadcast();
+class _CartScreenState extends ConsumerState<CartScreen> {
   final Map<String, int> _cartItems = {}; // Map to hold item IDs and their quantities
-  Future<void>? _pendingCartOp;
-
-  @override
-  void initState() {
-    super.initState();
-    _subscribeToCart();
-  }
-
-   @override
-   void dispose() {
-    // Unsubscribe from PocketBase to prevent memory leaks or duplicate connections
-    pb.collection('cart_items').unsubscribe('*');
-    _cartStreamController.close();
-    super.dispose();
-  }
 
   int _getQuantity(String itemId) {
     return _cartItems[itemId] ?? 0;
   }
 
-  Future<void> _subscribeToCart() async {
-    if (pb.authStore.record == null) {
-      logger.w('User is not logged in, cannot retrieve user_id.');
-      return;
-    }
-
-    try{
-      // Subscribe to the specific user's cart collection
-      await pb.collection('cart_items').subscribe('*', (ev) {
-        // e.action can be 'create', 'update', or 'delete'
-        // Feed the updated model event into our stream controller
-        logger.i('CartScreen real time event: $ev');
-        _cartStreamController.add(ev.record);
-        setState(() {}); // trigger widget rebuild
-      },
-        filter: 'user = "${pb.authStore.record?.id}"',
-      );
-
-      logger.i('Subscribed to cart item table events');
-    } catch (e) {
-      logger.e('Failed to subscribe to cart items table events: $e');
-      return;
-    }
-  }
-
-  Future<Map<String, List<RecordModel>>> _fetchCartItems() async {
-    if (pb.authStore.record == null) {
-      logger.w('User is not logged in, cannot retrieve user_id.');
-      return {};
-    }
-    
-    Map<String, List<RecordModel>> storeItemsMap = {};
-    try {
-      final cartItems = await pb.collection('cart_items').getList(
-        filter: 'user="${pb.authStore.record?.id}"',
-        expand: 'item',
-      );
-
-      for (var cartItem in cartItems.items) {
-        final expand = cartItem.get<List<RecordModel>>('expand');
-        final quantity = cartItem.get<int>('quantity');
-        for (var expandedItem in expand) {
-          final item = expandedItem.get<RecordModel>('item');
-          final store = item.get<String>('store');
-          storeItemsMap.putIfAbsent(store, () => []);
-          storeItemsMap[store]!.add(cartItem);
-          _cartItems[item.id] = quantity;
-        }
-      }
-
-      return storeItemsMap;
-    } catch (e) {
-      logger.e('Error fetching cart items: $e');
-      return {};
-    }
-  }
-
-   Future<void> _removeFromCart(RecordModel cartItem) async {
-    if (pb.authStore.record == null) {
-      logger.w('User is not logged in, cannot remove item to cart.');
-      return;
-    }
-
-    try {
-      final expand = cartItem.get<List<RecordModel>>('expand');
-      for (var expandedItem in expand) {
-        final item = expandedItem.get<RecordModel>('item');
-        _cartItems[item.id] = 0;
-      }
-      await pb.collection('cart_items').delete(cartItem.id);
-      logger.i('removing item: ${cartItem.id} from cart_items');
-    } catch (e) {
-      logger.e("Failed to remove cart item: $cartItem from cart: $e");
-      return;
-    }
-  }
-
-  Future<void> _addToCart(RecordModel item, int quantity) async {
-    if (pb.authStore.record == null) {
-      logger.w('User is not logged in, cannot add item to cart.');
-      return;
-    }
-    _cartItems[item.id] = quantity;
-
-    Future<void> currentOp() async {
-      try { 
-        // if the item is already in the cart, update the quantity instead of creating a new record
-        final existingCartItems = await pb.collection('cart_items').getList(
-          filter: 'user="${pb.authStore.record?.id}" && item="${item.id}"',
-        );
-
-        if (existingCartItems.items.isNotEmpty) {
-          final existingCartItem = existingCartItems.items.first;
-          await pb.collection('cart_items').update(
-            existingCartItem.id,
-            body: {
-              'quantity': quantity,
-            },
-          );
-          logger.i('Updating cart item ($existingCartItem) quantity to $quantity');
-        } else {
-          await pb.collection('cart_items').create(
-            body: {
-              'quantity': quantity,
-              'item': item.id,
-              'user': pb.authStore.record?.id,
-            },
-          );
-          logger.i('creating cart item');
-        }
-      } catch (e) {
-        logger.e('Error adding item to cart: $e');
-        return;
-      }
-    }
-
-    // Wait for any previous click to finish, then execute this one
-    if (_pendingCartOp != null) {
-      await _pendingCartOp;
-    }
-
-    _pendingCartOp = currentOp();
-    await _pendingCartOp;
-  }
-
   @override 
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, List<RecordModel>>>(
-      future: _fetchCartItems(), 
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    final cartItems = ref.watch(cartProvider);
+
+    return cartItems.when(
+          loading: () {
           logger.i('Syncing cart items...');
-          return SpinKitWave(size: 30.0, color: Colors.black);
-        } else if (snapshot.hasError) {
-          logger.e('Error in FutureBuilder: ${snapshot.error}');
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } 
-        final cartItemsMap = snapshot.data ?? {};
+            return SpinKitWave(size: 30.0, color: Colors.black);
+          },
+        error: (e, st) {
+          logger.e('Error in FutureBuilder: ${e}');
+          return Center(child: Text('Error: ${e}'));
+        },
+        data: (cartItemsMap) {
         if (cartItemsMap.isEmpty) {
           return Center(
             child: ListView.builder(
@@ -210,6 +73,7 @@ class _CartScreenState extends State<CartScreen> {
                   itemCount: cartItemsList.length,
                   shrinkWrap: true,
                   itemBuilder: (context, listIndex) {
+                    final pb = ref.read(pbProvider);
                     final cartItem = cartItemsList[listIndex];
                     final item = cartItem.get<RecordModel>('expand').get<RecordModel>('item');
                     final imageUrl = pb.files.getUrl(item, item.get<String>('image')).toString();
@@ -262,9 +126,9 @@ class _CartScreenState extends State<CartScreen> {
                                     icon: const Icon(Icons.remove, color: Colors.white),
                                     onPressed: () async {
                                       if (_getQuantity(item.id) > 1) {
-                                        await _addToCart(item, _getQuantity(item.id) - 1);
+                                        await ref.read(cartProvider.notifier).addToCart(item, _getQuantity(item.id) - 1);
                                       } else {
-                                        await _removeFromCart(cartItem);
+                                        await ref.read(cartProvider.notifier).removeFromCart(cartItem);
                                       }
                                     },
                                   ),
@@ -284,7 +148,7 @@ class _CartScreenState extends State<CartScreen> {
                                     padding: EdgeInsets.zero,
                                     icon: const Icon(Icons.add, color: Colors.white),
                                     onPressed: () async {
-                                      await _addToCart(item, _getQuantity(item.id) + 1);
+                                        await ref.read(cartProvider.notifier).addToCart(item, _getQuantity(item.id) + 1);
                                     },
                                   ),
                                 ],
@@ -295,7 +159,7 @@ class _CartScreenState extends State<CartScreen> {
                       ),                  
                       trailing: IconButton(
                         onPressed: () async {
-                          await _removeFromCart(cartItem);
+                          await ref.read(cartProvider.notifier).removeFromCart(cartItem);
                         },
                         icon: const Icon(Icons.delete), 
                         color: Colors.black

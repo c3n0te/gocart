@@ -185,6 +185,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 return; // Check if the widget is still mounted
                               }
 
+                              final pb = ref.read(pbProvider);
                               if (pb.authStore.isValid) {
                                 Navigator.pop(context);
                               } else {

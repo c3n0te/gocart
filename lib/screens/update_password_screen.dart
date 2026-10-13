@@ -120,6 +120,7 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen> {
 
                               if (!context.mounted) return;
 
+                              final pb = ref.read(pbProvider);
                               if (pb.authStore.isValid) {
                                 setState(() {});
                               } else {

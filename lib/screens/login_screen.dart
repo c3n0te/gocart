@@ -56,6 +56,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pb = ref.read(pbProvider);
+
     return pb.authStore.isValid
         ? SettingsScreen()
         : Scaffold(

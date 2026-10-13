@@ -4,6 +4,8 @@ import 'package:gocart/globals/pocketbase.dart';
 class AuthNotifier extends AsyncNotifier<bool> {
   @override
   Future<bool> build() async {
+    final pb = ref.read(pbProvider);
+
     // Check if the user is already logged in when the app starts
     return pb.authStore.isValid;
   }
@@ -11,6 +13,7 @@ class AuthNotifier extends AsyncNotifier<bool> {
   Future<void> login(String email, String password) async {
     state = const AsyncValue.loading();
     try {
+      final pb = ref.read(pbProvider);
       // Perform the PocketBase login
       await pb.collection('users').authWithPassword(email, password);
 
@@ -28,6 +31,8 @@ class AuthNotifier extends AsyncNotifier<bool> {
     String newPasswordConfirm,
   ) async {
     state = const AsyncValue.loading();
+    
+    final pb = ref.read(pbProvider);
     final userId = pb.authStore.record?.id;
     final email = pb.authStore.record?.data['email'];
     if (userId == null || email == null || email.isEmpty) {
@@ -68,6 +73,8 @@ class AuthNotifier extends AsyncNotifier<bool> {
   ) async {
     state = AsyncValue.loading();
     try {
+      final pb = ref.read(pbProvider);
+
       await pb
           .collection('users')
           .create(
@@ -89,6 +96,7 @@ class AuthNotifier extends AsyncNotifier<bool> {
   }
 
   void logout() {
+    final pb = ref.read(pbProvider);
     pb.authStore.clear();
     state = const AsyncValue.data(false);
   }

@@ -14,7 +14,6 @@ class ListScreen extends ConsumerStatefulWidget {
 }
 
 class _ListScreenState extends ConsumerState<ListScreen> {
-  final List<RecordModel> _items = [];
   final TextEditingController _newListItemController = TextEditingController();
   final Map<String, TextEditingController> _controllers = {};
 
@@ -43,8 +42,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
         error: (e, st) {
           logger.e('Error syncing list items: $e');
           return Center(child: Text('Error loading list items: $e'));
-        },
-        
+        },      
         data: (listItems) {
           return Scaffold(
             floatingActionButton: FloatingActionButton(
@@ -84,9 +82,10 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                         ),
                         TextButton(
                           child: const Text('Ok'),
-                          onPressed: () {
-                            ref.read(listProvider.notifier).addItem(_newListItemController.text); // adds item to list
+                          onPressed: () async {
+                            await ref.read(listProvider.notifier).addItem(_newListItemController.text); // adds item to list
                             _newListItemController.clear(); // Clear the text field
+                            if (!context.mounted) return;
                             Navigator.of(context).pop(); // Closes the popup
                           },
                         )
@@ -101,41 +100,47 @@ class _ListScreenState extends ConsumerState<ListScreen> {
             ),
             body: ListView.builder(
               scrollDirection: Axis.vertical,
-              itemCount: _items.length,
+              itemCount: listItems.length,
               itemBuilder: (context, index) {
                 return Dismissible(
-                  key: Key(_items[index].id),
+                  key: Key(listItems[index].id),
                   background: Container(color: Colors.red),
-                  onDismissed: (direction) {
-                    ref.read(listProvider.notifier).removeItem(_items[index].id);
+                  onDismissed: (direction) async {
+                    final itemId = listItems[index].id;
+                    await ref.read(listProvider.notifier).removeItem(itemId);
                   },
                   child: ListTile(
                     leading: const Icon(Icons.fiber_manual_record, color: Colors.black),
                     title: TextField(
                       maxLines: null, // Allows the text field to expand vertically
-                      controller: _getControllerForItem(_items[index]),
+                      controller: _getControllerForItem(listItems[index]),
                       style: TextStyle(color: Colors.black),
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
                       ),
                       onChanged: (value) {
-                        _items[index].set('name', value); // Update the state when the text changes
+                        listItems[index].set('name', value); // Update the state when the text changes
                       }, 
-                      onSubmitted: (value) {
-                        if (_getControllerForItem(_items[index]).text.isEmpty) {
-                          ref.read(listProvider.notifier).removeItem(_items[index].id);
+                      onSubmitted: (value) async {
+                        if (_getControllerForItem(listItems[index]).text.isEmpty) {
+                          await ref.read(listProvider.notifier).removeItem(listItems[index].id);
                           return;
                         }
-                        ref.read(listProvider.notifier).updateItem(_items[index].id, value);
+
+                       await ref.read(listProvider.notifier).updateItem(listItems[index].id, value);
                       },
-                      onTapOutside: (event) {
-                        if (_getControllerForItem(_items[index]).text.isEmpty) {
-                          ref.read(listProvider.notifier).removeItem(_items[index].id);
+                      onTapOutside: (event) async {
+                        if (_getControllerForItem(listItems[index]).text.isEmpty) {
+                          await ref.read(listProvider.notifier).removeItem(listItems[index].id);
+
+                          if (!context.mounted) return;
                           FocusScope.of(context).unfocus(); // Dismiss the keyboard when tapping outside
                           return;
                         }
-                        ref.read(listProvider.notifier).updateItem(_items[index].id, _getControllerForItem(_items[index]).text);
+                        
+                        await ref.read(listProvider.notifier).updateItem(listItems[index].id, _getControllerForItem(listItems[index]).text);
+                        if (!context.mounted) return;
                         FocusScope.of(context).unfocus(); // Dismiss the keyboard when tapping outside
                       },
                     ),

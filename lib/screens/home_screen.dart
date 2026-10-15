@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gocart/globals/cart_notifier.dart';
 import 'package:gocart/globals/items_notifier.dart';
-import 'package:pocketbase/pocketbase.dart';
+import 'package:gocart/globals/list_notifier.dart';
 import 'package:gocart/globals/logger.dart';
 import 'package:gocart/globals/pocketbase.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -17,19 +17,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAliveClientMixin {
   final Map<String, Timer> _cartDebounceTimers = {};
-  Map<String, int> _cartItems = {}; // Map to hold item IDs and their quantities
 
   @override
   bool get wantKeepAlive => true;
-
-  int _getQuantity(String itemId) {
-    return _cartItems[itemId] ?? 0;
-  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // This is required for AutomaticKeepAliveClientMixin
     final itemsAsync = ref.watch(itemsProvider);
+    ref.watch(listProvider);
+    ref.watch(cartProvider);
 
     return itemsAsync.when(
        loading: () {
@@ -133,20 +130,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                     ],
                                   ),
                                   const SizedBox(height: 8.0),
-                                  _getQuantity(item.id) > 0 ? Row(
+                                  ref.read(cartProvider.notifier).getQuantity(item.id) > 0 ? Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     children: [
                                       IconButton(
                                         icon: const Icon(Icons.remove, color: Colors.black),
                                         onPressed: () async {
-                                          final currentQty = _getQuantity(item.id);
+                                          final currentQty = ref.read(cartProvider.notifier).getQuantity(item.id);
                                           final targetQty = currentQty - 1;
 
                                           if (currentQty <= 0) return;
-
-                                          setState(() {
-                                            _cartItems[item.id] = targetQty;
-                                          }); 
 
                                           _cartDebounceTimers[item.id]?.cancel();
                                           _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
@@ -154,7 +147,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                               if (targetQty > 0) {
                                                 await ref.read(cartProvider.notifier).addToCart(item, targetQty);
                                               } else {
-                                                await ref.read(cartProvider.notifier).removeFromCart(item);
+                                                final store = item.get<String>('store');
+                                                await ref.read(cartProvider.notifier).removeFromCart(item, store);
                                               }
                                             } catch (e) {
                                               logger.e('Network sync failed: $e');
@@ -171,7 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                         height: 35,
                                         width: 75,
                                         child: Center(
-                                          child: Text('${_getQuantity(item.id)}', 
+                                          child: Text('${ref.read(cartProvider.notifier).getQuantity(item.id)}', 
                                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 
                                             maxLines: 1, 
                                             overflow: TextOverflow.ellipsis
@@ -181,12 +175,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                       IconButton(
                                         icon: const Icon(Icons.add, color: Colors.black),
                                         onPressed: () async {
-                                          final targetQty = _getQuantity(item.id) + 1;
+                                          final targetQty = ref.read(cartProvider.notifier).getQuantity(item.id) + 1;
 
-                                          setState(() {
-                                            _cartItems[item.id] = targetQty;
-                                          }); 
-                                          
                                           _cartDebounceTimers[item.id]?.cancel();
                                           _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
                                             try{
@@ -217,10 +207,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                         );
                                         return;
                                       }
-
-                                      setState(() {
-                                        _cartItems[item.id] = 1;
-                                      }); 
                                         
                                       _cartDebounceTimers[item.id]?.cancel();
                                       _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {

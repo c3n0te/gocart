@@ -28,6 +28,7 @@ class ItemsNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
   }
 
   Future<Map<String, List<RecordModel>>> _fetchItems() async {
+    state = AsyncValue.loading();
     final initItems = ["bananas", "milk", "peanut butter", "bread", "eggs", "steak", "chicken", "olive oil", "rice", "cheese"];
     Map<String, List<RecordModel>> itemsMap = {};
     final pb = ref.read(pbProvider);
@@ -48,9 +49,11 @@ class ItemsNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
         }
 
         logger.i(itemsMap);
+        state = AsyncValue.data(itemsMap);
         return itemsMap;
-      } catch (e) {
+      } catch (e, st) {
         logger.e("Failed to create map of all items");
+        state = AsyncValue.error(e, st);
         return {};
       } 
     }
@@ -83,9 +86,11 @@ class ItemsNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
       }
 
       logger.i(itemsMap);
+      state = AsyncValue.data(itemsMap);
       return itemsMap;
-    } catch (e) {
+    } catch (e, st) {
       logger.e('Error fetching items: $e');
+      state = AsyncValue.error(e, st);
       return {};
     }
   }

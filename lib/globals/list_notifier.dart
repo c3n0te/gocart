@@ -28,16 +28,17 @@ class ListNotifier extends AsyncNotifier<List<RecordModel>> {
     }
   }
 
-  Future<void> addItem(String itemName) async {
+  Future<RecordModel?> addItem(String itemName) async {
+    state = AsyncValue.loading();
     final pb = ref.read(pbProvider);
     if (itemName.isEmpty) {
       logger.w('Attempted to add an empty item name.');
-      return;
+      return null;
     }
 
     if (pb.authStore.record == null) {
       logger.w('User is not logged in, cannot retrieve user_id.');
-      return;
+      return null;
     }
 
     try {
@@ -46,30 +47,45 @@ class ListNotifier extends AsyncNotifier<List<RecordModel>> {
           'name': itemName,
           'user_id': pb.authStore.record?.id,
         },
-      );   
-    } catch (e) {
+      ); 
+
+      state = AsyncValue.data([...state.value ?? [], newListItem]);
+      return newListItem;
+    } catch (e, st) {
         logger.e('Error adding item: $e');
-        return;
+        state = AsyncValue.error(e, st);
+        return null;
     }
   }
 
   Future<void> removeItem(String itemId) async {
+    state = AsyncValue.loading();
     final pb = ref.read(pbProvider);
     try {
       await pb.collection('list_items').delete(itemId);
-    } catch (e) {
+      if (state.hasValue) {
+        state = AsyncValue.data(state.value!.where((item) => item.id != itemId).toList());
+      }
+    } catch (e, st) {
       logger.e('Error removing item: $e');
+      state = AsyncValue.error(e, st);
       return;
     }
   }
 
-  Future<void> updateItem(String itemId, String newName) async {
+  Future<RecordModel?> updateItem(String itemId, String newName) async {
+    state = AsyncValue.loading();
     final pb = ref.read(pbProvider);
     try {
-      await pb.collection('list_items').update(itemId, body: {'name': newName});
-    } catch (e) {
+      final updatedListItem = await pb.collection('list_items').update(itemId, body: {'name': newName});
+      if (state.hasValue) {
+        state = AsyncValue.data(state.value!.map((item) => item.id == itemId ? updatedListItem : item).toList());
+      }
+      return updatedListItem;
+    } catch (e, st) {
       logger.e('Error updating item: $e');
-      return;
+      state = AsyncValue.error(e, st);
+      return null;
     }
   }
 }

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -6,7 +5,6 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:gocart/globals/pocketbase.dart';
 import 'package:gocart/globals/logger.dart';
 import 'package:gocart/globals/cart_notifier.dart';
-import 'package:gocart/models/cart_item.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -16,12 +14,6 @@ class CartScreen extends ConsumerStatefulWidget {
 }
 
 class _CartScreenState extends ConsumerState<CartScreen> {
-  final Map<String, int> _cartItems = {}; // Map to hold item IDs and their quantities
-
-  int _getQuantity(String itemId) {
-    return _cartItems[itemId] ?? 0;
-  }
-
   @override 
   Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
@@ -32,8 +24,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             return SpinKitWave(size: 30.0, color: Colors.black);
           },
         error: (e, st) {
-          logger.e('Error in FutureBuilder: ${e}');
-          return Center(child: Text('Error: ${e}'));
+          logger.e('Error in FutureBuilder: $e');
+          return Center(child: Text('Error: $e'));
         },
         data: (cartItemsMap) {
         if (cartItemsMap.isEmpty) {
@@ -125,10 +117,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                     padding: EdgeInsets.zero,
                                     icon: const Icon(Icons.remove, color: Colors.white),
                                     onPressed: () async {
-                                      if (_getQuantity(item.id) > 1) {
-                                        await ref.read(cartProvider.notifier).addToCart(item, _getQuantity(item.id) - 1);
+                                      final currentQty = ref.read(cartProvider.notifier).getQuantity(item.id);
+                                      final targetQty = currentQty - 1;
+                                      if (currentQty > 1) {
+                                        await ref.read(cartProvider.notifier).addToCart(item, targetQty);
                                       } else {
-                                        await ref.read(cartProvider.notifier).removeFromCart(cartItem);
+                                        await ref.read(cartProvider.notifier).removeFromCart(cartItem, store);
                                       }
                                     },
                                   ),
@@ -136,7 +130,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                     child: Padding(
                                       padding: EdgeInsets.symmetric(horizontal: 12),
                                       child: Text(
-                                        '${_getQuantity(item.id)}', 
+                                        '${ref.read(cartProvider.notifier).getQuantity(item.id)}', 
                                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 
                                         maxLines: 1, 
                                         overflow: TextOverflow.ellipsis
@@ -148,7 +142,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                     padding: EdgeInsets.zero,
                                     icon: const Icon(Icons.add, color: Colors.white),
                                     onPressed: () async {
-                                        await ref.read(cartProvider.notifier).addToCart(item, _getQuantity(item.id) + 1);
+                                      final currentQty = ref.read(cartProvider.notifier).getQuantity(item.id);
+                                      final targetQty = currentQty + 1;
+                                      await ref.read(cartProvider.notifier).addToCart(item, targetQty);
                                     },
                                   ),
                                 ],
@@ -159,7 +155,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       ),                  
                       trailing: IconButton(
                         onPressed: () async {
-                          await ref.read(cartProvider.notifier).removeFromCart(cartItem);
+                          await ref.read(cartProvider.notifier).removeFromCart(cartItem, store);
                         },
                         icon: const Icon(Icons.delete), 
                         color: Colors.black

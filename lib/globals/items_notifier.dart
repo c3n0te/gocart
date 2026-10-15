@@ -20,6 +20,7 @@ class ItemsNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
       final result = await pb.collection('list_items').getList(
         filter: 'user_id="${pb.authStore.record?.id}"',
       );
+      
       return result.items;
     } catch (e) {
       logger.e('Error fetching list items: $e');

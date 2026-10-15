@@ -6,10 +6,11 @@ import 'package:gocart/globals/logger.dart';
 class ListNotifier extends AsyncNotifier<List<RecordModel>> {
   @override
   Future<List<RecordModel>> build() async {
-    return _fetchListItems();
+    return fetchListItems();
   }
 
-  Future<List<RecordModel>> _fetchListItems() async {
+  Future<List<RecordModel>> fetchListItems() async {
+    state = AsyncValue.loading();
     final pb = ref.read(pbProvider);
     if (pb.authStore.record == null) {
       logger.w('User is not logged in, cannot retrieve user_id.');
@@ -21,9 +22,11 @@ class ListNotifier extends AsyncNotifier<List<RecordModel>> {
         filter: 'user_id="${pb.authStore.record?.id}"',
       );
 
+      state = AsyncValue.data(result.items);
       return result.items;
-    } catch (e) {
-      logger.e('Error fetching items: $e');
+    } catch (e, st) {
+      logger.e('Error fetching list items: $e');
+      state = AsyncValue.error(e, st);
       return [];
     }
   }

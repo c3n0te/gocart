@@ -25,8 +25,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   Widget build(BuildContext context) {
     super.build(context); // This is required for AutomaticKeepAliveClientMixin
     final itemsAsync = ref.watch(itemsProvider);
-    ref.watch(listProvider);
     ref.watch(cartProvider);
+    ref.listen(listProvider, (prev, next) async {
+      await ref.refresh(itemsProvider.future).then((_) {});
+    });
 
     return itemsAsync.when(
        loading: () {
@@ -38,9 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
         },
         data: (itemsMap) {
           return RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(itemsProvider.notifier).build();
-            },
+            onRefresh: () => ref.refresh(itemsProvider.future),
             child: ListView.builder(
               scrollDirection: Axis.vertical,
               itemCount: itemsMap.length,
@@ -158,10 +158,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                             } finally {  
                                               setState(() {
                                                 _cartDebounceTimers.remove(item.id);
-                                            }); 
+                                              }); 
                                             }
-                                          });
-                                          
+                                          });                          
                                         }  
                                       ),
                                       SizedBox(

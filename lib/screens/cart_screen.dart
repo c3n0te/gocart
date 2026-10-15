@@ -24,7 +24,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             return SpinKitWave(size: 30.0, color: Colors.black);
           },
         error: (e, st) {
-          logger.e('Error in FutureBuilder: $e');
+          logger.e('Error: $e');
           return Center(child: Text('Error: $e'));
         },
         data: (cartItemsMap) {

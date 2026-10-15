@@ -148,7 +148,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                                 await ref.read(cartProvider.notifier).addToCart(item, targetQty);
                                               } else {
                                                 final store = item.get<String>('store');
-                                                await ref.read(cartProvider.notifier).removeFromCart(item, store);
+                                                final cartItem = await ref.read(cartProvider.notifier).getCartItem(item);
+                                                if (cartItem != null) {
+                                                  await ref.read(cartProvider.notifier).removeFromCart(cartItem, store);
+                                                }
                                               }
                                             } catch (e) {
                                               logger.e('Network sync failed: $e');

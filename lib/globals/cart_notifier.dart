@@ -16,6 +16,26 @@ class CartNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
     return _cartItems[itemId] ?? 0;
   }
 
+  Future<RecordModel?> getCartItem(RecordModel item) async {
+    final pb = ref.read(pbProvider);
+    if (pb.authStore.record == null) {
+      logger.w('User is not logged in, cannot retrieve user_id.');
+      return null;
+    }
+
+    try {
+      final cartItem = await pb.collection('cart_items').getFirstListItem(
+        'item = "${item.id}"',
+        expand: 'item'
+      );
+     
+      return cartItem;
+    } catch (e, st) {
+      logger.e('Failed to get cart item with item id: ${item.id}: $e');
+      return null;
+    }
+  }
+
   Future<List<CartItem>> _fetchCartItems() async {
     final pb = ref.read(pbProvider);
     if (pb.authStore.record == null) {
@@ -79,28 +99,20 @@ class CartNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
     }
 
     try {
-      await pb.collection('cart_items').delete(cartItem.id);
-      logger.i('removing item: ${cartItem.id} from cart_items');
       final itemId = cartItem.get<String>('item');
       _cartItems.remove(itemId);
-
-      final currentItems = state.value;
-      if (currentItems == null) {
+      await pb.collection('cart_items').delete(cartItem.id);
+      logger.i('removing item: ${cartItem.id} from cart_items');
+      Map<String, List<RecordModel>> currentStoreCartItems = state.value ?? {};
+      if (currentStoreCartItems == null || currentStoreCartItems.isEmpty) {
         state = AsyncValue.data({});
         return;
       }
 
-      final updatedStoreItems = List<RecordModel>.from(currentItems[store] ?? []);
-      updatedStoreItems.remove(cartItem);
-
-      final updatedItems = Map<String, List<RecordModel>>.from(currentItems);
-      if (updatedStoreItems.isEmpty) {
-        updatedItems.remove(store);
-      } else {
-        updatedItems[store] = updatedStoreItems;
-      }
-
-      state = AsyncValue.data(updatedItems);
+      List<RecordModel> currentCartItems = currentStoreCartItems[store] ?? [];
+      currentCartItems.removeWhere((cItem) => cItem.id == cartItem.id);
+      currentStoreCartItems[store] = currentCartItems;
+      state = AsyncValue.data(currentStoreCartItems);
     } catch (e, st) {
       logger.e("Failed to remove cart item: $cartItem from cart: $e");
       state = AsyncValue.error(e, st);

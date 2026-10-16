@@ -98,13 +98,12 @@ class CartNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
       return;
     }
 
+    final previousState = state;
     try {
       final itemId = cartItem.get<String>('item');
       _cartItems.remove(itemId);
-      await pb.collection('cart_items').delete(cartItem.id);
-      logger.i('removing item: ${cartItem.id} from cart_items');
       Map<String, List<RecordModel>> currentStoreCartItems = state.value ?? {};
-      if (currentStoreCartItems == null || currentStoreCartItems.isEmpty) {
+      if (currentStoreCartItems.isEmpty) {
         state = AsyncValue.data({});
         return;
       }
@@ -113,9 +112,11 @@ class CartNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
       currentCartItems.removeWhere((cItem) => cItem.id == cartItem.id);
       currentStoreCartItems[store] = currentCartItems;
       state = AsyncValue.data(currentStoreCartItems);
-    } catch (e, st) {
+      logger.i('removing item: ${cartItem.id} from cart_items');
+      await pb.collection('cart_items').delete(cartItem.id);
+    } catch (e) {
       logger.e("Failed to remove cart item: $cartItem from cart: $e");
-      state = AsyncValue.error(e, st);
+      state = previousState;
       return;
     }
   }
@@ -128,30 +129,35 @@ class CartNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
       return;
     }
 
+    final previousState = state;
     try { 
+      _cartItems[item.id] = quantity;
       // if the item is already in the cart, update the quantity instead of creating a new record
       final existingCartItems = await pb.collection('cart_items').getList(
         filter: 'user="${pb.authStore.record?.id}" && item="${item.id}"',
+        expand: 'item',
       );
 
       final store = item.get<String>('store');
       if (existingCartItems.items.isNotEmpty) {
-        final existingCartItem = existingCartItems.items.first;
-        final updatedCartItem = await pb.collection('cart_items').update(
+        RecordModel existingCartItem = existingCartItems.items.first;
+        Map<String, List<RecordModel>> storeItemsMap = state.value ?? {};
+        List<RecordModel> cartItems = storeItemsMap[store] ?? [];
+        logger.i('Updating cart item ($existingCartItem) quantity to $quantity');
+        existingCartItem.data['quantity'] = quantity;
+        final listIndex = cartItems.indexWhere((cartItem) => cartItem.id == existingCartItem.id);
+        if (listIndex >= 0) {
+          cartItems[listIndex] = existingCartItem;
+        }
+
+        state = AsyncValue.data(storeItemsMap);
+        await pb.collection('cart_items').update(
           existingCartItem.id,
           body: {
             'quantity': quantity,
           },
           expand: 'item',
         );
-        logger.i('Updating cart item ($existingCartItem) quantity to $quantity');
-        Map<String, List<RecordModel>> storeItemsMap = state.value ?? {};
-        List<RecordModel> cartItems = storeItemsMap[store] ?? [];
-        final listIndex = cartItems.indexWhere((cartItem) => cartItem.id == updatedCartItem.id);
-        if (listIndex >= 0) {
-          cartItems[listIndex] = updatedCartItem;
-        }
-        state = AsyncValue.data(storeItemsMap);
       } else {
         final newCartItem = await pb.collection('cart_items').create(
           body: {
@@ -166,10 +172,9 @@ class CartNotifier extends AsyncNotifier<Map<String, List<RecordModel>>> {
         storeItemsMap.putIfAbsent(store, () => []).add(newCartItem);
         state = AsyncValue.data(storeItemsMap);
       }
-      _cartItems[item.id] = quantity;
-    } catch (e, st) {
+    } catch (e) {
       logger.e('Error adding item to cart: $e');
-      state = AsyncValue.error(e, st);
+      state = previousState;
       return;
     }
   }

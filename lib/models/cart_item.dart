@@ -34,4 +34,7 @@ class CartItem {
       updatedAt: DateTime.parse(record.get<String>('updated')),
     );
   }
+
+  Map<String, dynamic> toJson() => {'id': id, 'item': itemId, 'user': userId, 'quantity': quantity, 'updated':updatedAt};
+  Map<String, dynamic> newToJson() => {'item': itemId, 'user': userId, 'quantity': quantity};
 }

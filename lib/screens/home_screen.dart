@@ -40,7 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
         },
         data: (itemsMap) {
           return RefreshIndicator(
-            onRefresh: () => ref.refresh(itemsProvider.future),
+            onRefresh: () async => await ref.refresh(itemsProvider.future),
             child: ListView.builder(
               scrollDirection: Axis.vertical,
               itemCount: itemsMap.length,
@@ -130,98 +130,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                     ],
                                   ),
                                   const SizedBox(height: 8.0),
-                                  ref.read(cartProvider.notifier).getQuantity(item.id) > 0 ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.remove, color: Colors.black),
-                                        onPressed: () async {
-                                          final currentQty = ref.read(cartProvider.notifier).getQuantity(item.id);
-                                          final targetQty = currentQty - 1;
+                                  ref.read(cartProvider.notifier).getQuantity(item.id) > 0 ? Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.remove, color: Colors.black),
+                                          onPressed: () async {
+                                            final currentQty = ref.read(cartProvider.notifier).getQuantity(item.id);
+                                            final targetQty = currentQty - 1;
 
-                                          if (currentQty <= 0) return;
+                                            if (currentQty <= 0) return;
 
-                                          _cartDebounceTimers[item.id]?.cancel();
-                                          _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
-                                            try {
-                                              if (targetQty > 0) {
-                                                await ref.read(cartProvider.notifier).addToCart(item, targetQty);
-                                              } else {
-                                                final store = item.get<String>('store');
-                                                final cartItem = await ref.read(cartProvider.notifier).getCartItem(item);
-                                                if (cartItem != null) {
-                                                  await ref.read(cartProvider.notifier).removeFromCart(cartItem, store);
+                                            _cartDebounceTimers[item.id]?.cancel();
+                                            _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
+                                              try {
+                                                if (targetQty > 0) {
+                                                  await ref.read(cartProvider.notifier).addToCart(item, targetQty);
+                                                } else {
+                                                  final store = item.get<String>('store');
+                                                  final cartItem = await ref.read(cartProvider.notifier).getCartItem(item);
+                                                  if (cartItem != null) {
+                                                    await ref.read(cartProvider.notifier).removeFromCart(cartItem, store);
+                                                  }
                                                 }
+                                              } catch (e) {
+                                                logger.e('Network sync failed: $e');
+                                              } finally {  
+                                                setState(() {
+                                                  _cartDebounceTimers.remove(item.id);
+                                                }); 
                                               }
-                                            } catch (e) {
-                                              logger.e('Network sync failed: $e');
-                                            } finally {  
-                                              setState(() {
-                                                _cartDebounceTimers.remove(item.id);
-                                              }); 
-                                            }
-                                          });                          
-                                        }  
-                                      ),
-                                      SizedBox(
-                                        height: 35,
-                                        width: 75,
-                                        child: Center(
-                                          child: Text('${ref.read(cartProvider.notifier).getQuantity(item.id)}', 
-                                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 
-                                            maxLines: 1, 
-                                            overflow: TextOverflow.ellipsis
+                                            });                          
+                                          }  
+                                        ),
+                                        SizedBox(
+                                          height: 35,
+                                          width: 75,
+                                          child: Center(
+                                            child: Text('${ref.read(cartProvider.notifier).getQuantity(item.id)}', 
+                                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), 
+                                              maxLines: 1, 
+                                              overflow: TextOverflow.ellipsis
+                                            )
                                           )
-                                        )
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.add, color: Colors.black),
-                                        onPressed: () async {
-                                          final targetQty = ref.read(cartProvider.notifier).getQuantity(item.id) + 1;
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.add, color: Colors.black),
+                                          onPressed: () async {
+                                            final targetQty = ref.read(cartProvider.notifier).getQuantity(item.id) + 1;
 
-                                          _cartDebounceTimers[item.id]?.cancel();
-                                          _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
-                                            try{
-                                              await ref.read(cartProvider.notifier).addToCart(item, targetQty);
-                                            } catch (e) {
-                                              logger.e('Network sync failed: $e');
-                                            } finally {
-                                              _cartDebounceTimers.remove(item.id);
-                                            }
-                                          });
-                                        },
+                                            _cartDebounceTimers[item.id]?.cancel();
+                                            _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
+                                              try{
+                                                await ref.read(cartProvider.notifier).addToCart(item, targetQty);
+                                              } catch (e) {
+                                                logger.e('Network sync failed: $e');
+                                              } finally {
+                                                _cartDebounceTimers.remove(item.id);
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  ) : Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: ElevatedButton.icon(
+                                      icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.black,
+                                        minimumSize: const Size(double.infinity, 35), // Make the button take the full width of the card
                                       ),
-                                    ],
-                                  ) : ElevatedButton.icon(
-                                    icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.black,
-                                      minimumSize: const Size(double.infinity, 35), // Make the button take the full width of the card
-                                    ),
-                                    onPressed: () async {
-                                      if (pb.authStore.record == null) {
-                                        logger.w('User is not logged in, cannot add item to cart.');
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Please log in to add items to your cart.'),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                        
-                                      _cartDebounceTimers[item.id]?.cancel();
-                                      _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
-                                        try {
-                                          await ref.read(cartProvider.notifier).addToCart(item, 1);
-                                        } catch (e) {
-                                          logger.e('Network sync failed: $e');
-                                        } finally {
-                                          _cartDebounceTimers.remove(item.id);
+                                      onPressed: () async {
+                                        if (pb.authStore.record == null) {
+                                          logger.w('User is not logged in, cannot add item to cart.');
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Please log in to add items to your cart.'),
+                                              duration: Duration(seconds: 2),
+                                            ),
+                                          );
+                                          return;
                                         }
-                                      });
-                                    },
-                                    label: const Text('Add to cart', style: TextStyle(color: Colors.white)),
+                                          
+                                        _cartDebounceTimers[item.id]?.cancel();
+                                        _cartDebounceTimers[item.id] = Timer(const Duration(milliseconds: 350), () async {
+                                          try {
+                                            await ref.read(cartProvider.notifier).addToCart(item, 1);
+                                          } catch (e) {
+                                            logger.e('Network sync failed: $e');
+                                          } finally {
+                                            _cartDebounceTimers.remove(item.id);
+                                          }
+                                        });
+                                      },
+                                      label: const Text('Add to cart', style: TextStyle(color: Colors.white)),
+                                    ),
                                   ),
                                 ],
                               ),
